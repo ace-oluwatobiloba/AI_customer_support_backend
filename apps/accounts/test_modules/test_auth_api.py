@@ -15,6 +15,12 @@ from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework.test import APIRequestFactory, force_authenticate
+from rest_framework.views import APIView
+
+from apps.accounts.authentication import EligibleAccountJWTAuthentication
 
 from apps.accounts.services.email_verification import (
     generate_verification_token,
@@ -329,3 +335,64 @@ class JWTRefreshAPITests(APITestCase):
             response.status_code,
             status.HTTP_400_BAD_REQUEST,
         )
+
+class ExistingAccessTokenEligibilityTests(APITestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="access.token@example.com",
+            password="A-Strong-Unique-Test-Password-482!",
+            role=User.Role.CUSTOMER,
+            status=User.Status.ACTIVE,
+            email_verified=True,
+        )
+
+        self.access_token = str(RefreshToken.for_user(self.user).access_token)
+
+        class ProtectedTestView(APIView):
+            authentication_classes = [EligibleAccountJWTAuthentication]
+            permission_classes = [IsAuthenticated]
+
+            def get(self, request):
+                return Response({"detail": "Access granted."})
+
+        self.view = ProtectedTestView.as_view()
+        self.factory = APIRequestFactory()
+
+    def make_request(self):
+        request = self.factory.get(
+            "/test-protected/",
+            HTTP_AUTHORIZATION=f"Bearer {self.access_token}",
+        )
+        return self.view(request)
+
+    def test_active_verified_user_can_use_access_token(self):
+        response = self.make_request()
+        self.assertEqual(response.status_code, 200)
+
+    def test_suspended_user_cannot_use_existing_access_token(self):
+        self.user.status = User.Status.SUSPENDED
+        self.user.save(update_fields=["status"])
+
+        response = self.make_request()
+        self.assertEqual(response.status_code, 401)
+
+    def test_inactive_status_user_cannot_use_existing_access_token(self):
+        self.user.status = User.Status.INACTIVE
+        self.user.save(update_fields=["status"])
+
+        response = self.make_request()
+        self.assertEqual(response.status_code, 401)
+
+    def test_unverified_user_cannot_use_existing_access_token(self):
+        self.user.email_verified = False
+        self.user.save(update_fields=["email_verified"])
+
+        response = self.make_request()
+        self.assertEqual(response.status_code, 401)
+
+    def test_deactivated_user_cannot_use_existing_access_token(self):
+        self.user.is_active = False
+        self.user.save(update_fields=["is_active"])
+
+        response = self.make_request()
+        self.assertEqual(response.status_code, 401)

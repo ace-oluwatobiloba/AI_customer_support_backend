@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>AI Customer Support Backend</title>
+
+    <style>
+        :root {
+            --background: #0b1120;
+            --surface: #151f32;
+            --primary: #60a5fa;
+            --text: #f1f5f9;
+            --muted: #a7b4c8;
+            --border: #29374d;
+            --success: #4ade80;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+            background: var(--background);
+            color: var(--text);
+            line-height: 1.6;
+        }
+
+        .container {
+            width: min(1100px, 90%);
+            margin: 0 auto;
+        }
+
+        header {
+            padding: 24px 0;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .brand {
+            font-size: 1.1rem;
+            font-weight: 700;
+            letter-spacing: 0.3px;
+        }
+
+        .brand span {
+            color: var(--primary);
+        }
+
+        .hero {
+            padding: 85px 0 60px;
+            text-align: center;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 6px 12px;
+            border: 1px solid var(--border);
+            border-radius: 999px;
+            color: var(--success);
+            font-size: 0.85rem;
+        }
+
+        h1 {
+            max-width: 850px;
+            margin: 22px auto 16px;
+            font-size: clamp(2.2rem, 5vw, 3.8rem);
+            line-height: 1.15;
+        }
+
+        .hero p {
+            max-width: 720px;
+            margin: 0 auto;
+            color: var(--muted);
+            font-size: 1.05rem;
+        }
+
+        .section-title {
+            margin: 0 0 8px;
+            font-size: 1.8rem;
+        }
+
+        .section-description {
+            margin: 0 0 28px;
+            color: var(--muted);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(
+                auto-fit,
+                minmax(230px, 1fr)
+            );
+            gap: 20px;
+            padding-bottom: 65px;
+        }
+
+        .card {
+            padding: 25px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            background: var(--surface);
+        }
+
+        .card h3 {
+            margin-top: 0;
+            margin-bottom: 10px;
+        }
+
+        .card p {
+            color: var(--muted);
+            min-height: 52px;
+        }
+
+        .card a {
+            display: inline-block;
+            margin-top: 12px;
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 700;
+        }
+
+        .card a:hover {
+            text-decoration: underline;
+        }
+
+        .notice {
+            margin-bottom: 55px;
+            padding: 20px;
+            border-left: 4px solid var(--primary);
+            background: var(--surface);
+            border-radius: 6px;
+            color: var(--muted);
+        }
+
+        footer {
+            padding: 25px 0;
+            border-top: 1px solid var(--border);
+            color: var(--muted);
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 600px) {
+            .hero {
+                padding-top: 55px;
+            }
+
+            .card p {
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="brand">
+                AI <span>Customer Support</span> Backend
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <span class="badge">
+                    Development Environment
+                </span>
+
+                <h1>
+                    Intelligent Customer Support Infrastructure
+                </h1>
+
+                <p>
+                    An API-first customer support backend combining
+                    authentication, knowledge-base management, ticket
+                    workflows, and escalation capabilities.
+                </p>
+            </div>
+        </section>
+
+        <section class="container">
+            <h2 class="section-title">Explore the API</h2>
+
+            <p class="section-description">
+                Select a component to explore its available endpoints.
+                Protected operations require authentication.
+            </p>
+
+            <div class="grid">
+                <article class="card">
+                    <h3>Accounts & Authentication</h3>
+
+                    <p>
+                        Registration, email verification, and
+                        JWT-based authentication.
+                    </p>
+
+                    <a href="/api/v1/auth/">
+                        Explore authentication &rarr;
+                    </a>
+                </article>
+
+                <article class="card">
+                    <h3>Knowledge Base</h3>
+
+                    <p>
+                        API endpoints for knowledge-base document
+                        management and related operations.
+                    </p>
+
+                    <a href="/api/v1/knowledge/">
+                        Explore knowledge base &rarr;
+                    </a>
+                </article>
+
+                <article class="card">
+                    <h3>Support & Tickets</h3>
+
+                    <p>
+                        Ticket management, agent assignments,
+                        and escalation workflows.
+                    </p>
+
+                    <a href="/api/v1/support/tickets/">
+                        Explore support tickets &rarr;
+                    </a>
+                </article>
+
+                <article class="card">
+                    <h3>Administration</h3>
+
+                    <p>
+                        Access Django's administration interface
+                        with an authorized administrator account.
+                    </p>
+
+                    <a href="/admin/">
+                        Open administration &rarr;
+                    </a>
+                </article>
+            </div>
+
+            <div class="notice">
+                <strong>API access:</strong>
+                Some endpoints require a valid JWT access token,
+                an appropriate user role, or a resource identifier.
+                A response indicating that authentication or
+                authorization is required does not necessarily
+                indicate a server failure.
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            AI Customer Support Backend &mdash;
+            Development Interface
+        </div>
+    </footer>
+</body>
+</html>

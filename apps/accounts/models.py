@@ -36,9 +36,18 @@ class UserManager(BaseUserManager):
         if not password:
             raise ValueError("Superuser must have a password.")
 
-        extra_fields.setdefault("role", User.Role.ADMIN)
-        extra_fields.setdefault("is_staff", True)
-        extra_fields.setdefault("is_superuser", True)
+        if extra_fields.get("is_staff", True) is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+
+        if extra_fields.get("is_superuser", True) is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
+
+        if extra_fields.get("role", User.Role.ADMIN) != User.Role.ADMIN:
+            raise ValueError("Superuser must have role=ADMIN.")
+
+        extra_fields["role"] = User.Role.ADMIN
+        extra_fields["is_staff"] = True
+        extra_fields["is_superuser"] = True
 
         return self.create_user(
             email=email,

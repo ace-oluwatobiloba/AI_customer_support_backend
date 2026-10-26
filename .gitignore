@@ -1,8 +1,8 @@
-@'
-# Environment variables and secrets
+﻿# Environment variables and secrets
 .env
 .env.*
 !.env.example
+.knowledge_access_token
 
 # Python environments
 .venv/
@@ -31,14 +31,11 @@ Thumbs.db
 .coverage
 htmlcov/
 .pytest_cache/
-'@ | Set-Content .gitignore
-
-@'
 
 # Local databases
 db.sqlite3
 db.sqlite3-journal
 
-# Archives and temporary test bundles
+# Archives and temporary backup files
 *.zip
-'@ | Add-Content .gitignore
+*.bak

@@ -6,6 +6,7 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from rest_framework_simplejwt.views import (
     TokenObtainPairView,
@@ -37,6 +38,22 @@ class CustomerRegistrationView(APIView):
 
     permission_classes = [AllowAny]
     authentication_classes = []
+
+    @extend_schema(
+        request=CustomerRegistrationSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Customer registered successfully."
+            ),
+            400: OpenApiResponse(
+                description="Registration data failed validation."
+            ),
+            503: OpenApiResponse(
+                description="Registration could not be completed."
+            ),
+        },
+        tags=["Authentication"],
+    )
 
     def post(self, request):
         serializer = CustomerRegistrationSerializer(
@@ -84,6 +101,19 @@ class EmailVerificationView(APIView):
 
     permission_classes = [AllowAny]
     authentication_classes = []
+
+    @extend_schema(
+        request=EmailVerificationSerializer,
+        responses={
+            200: OpenApiResponse(
+                description="Email verified successfully."
+            ),
+            400: OpenApiResponse(
+                description="The verification token is invalid or expired."
+            ),
+        },
+        tags=["Authentication"],
+    )
 
     def post(self, request):
         serializer = EmailVerificationSerializer(

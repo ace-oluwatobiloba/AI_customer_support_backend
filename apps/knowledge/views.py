@@ -17,6 +17,7 @@ from rest_framework.parsers import FormParser, MultiPartParser
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from drf_spectacular.utils import extend_schema, OpenApiResponse
 
 from apps.knowledge.models import KnowledgeDocument
 from apps.knowledge.serial.permissions import IsKnowledgeBaseAdmin
@@ -35,7 +36,6 @@ class KnowledgeDocumentUploadView(APIView):
     """
     Create a new knowledge-base document and its first version.
     """
-
     # Require JWT authentication and administrator-level access.
     permission_classes = [
         IsAuthenticated,
@@ -47,6 +47,19 @@ class KnowledgeDocumentUploadView(APIView):
         MultiPartParser,
         FormParser,
     ]
+
+    @extend_schema(
+        request=KnowledgeDocumentUploadSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Knowledge-base document created successfully."
+            ),
+            400: OpenApiResponse(
+                description="The upload failed validation or processing."
+            ),
+        },
+        tags=["Knowledge Base"],
+    )
 
     def post(self, request):
         # Validate the incoming title, description, and file.
@@ -118,6 +131,22 @@ class KnowledgeDocumentVersionUploadView(APIView):
         MultiPartParser,
         FormParser,
     ]
+
+    @extend_schema(
+        request=KnowledgeDocumentVersionUploadSerializer,
+        responses={
+            201: OpenApiResponse(
+                description="Document version uploaded successfully."
+            ),
+            400: OpenApiResponse(
+                description="The upload failed validation or processing."
+            ),
+            404: OpenApiResponse(
+                description="The requested document does not exist."
+            ),
+        },
+        tags=["Knowledge Base"],
+    )
 
     def post(self, request, document_id):
         # Resolve the document ID before invoking the upload service.

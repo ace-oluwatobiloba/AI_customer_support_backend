@@ -1,12 +1,10 @@
 from django.db import transaction
+from django.utils import timezone
 
 from apps.knowledge.models import KnowledgeDocumentVersion
 from apps.knowledge.services.chunk_persistence import save_document_chunks
 from apps.knowledge.services.document_extractor import extract_text
-from apps.knowledge.services.document_storage import (
-    DocumentStorageError,
-    open_document,
-)
+from apps.knowledge.services.document_storage import open_document
 from apps.knowledge.services.embedding_service import generate_embeddings
 from apps.knowledge.services.text_chunker import chunk_text
 
@@ -24,12 +22,13 @@ def ingest_document(
     document_version.processing_status = (
         KnowledgeDocumentVersion.ProcessingStatus.PROCESSING
     )
-    document_version.save(update_fields=["processing_status", "updated_at"])
+    document_version.save(
+        update_fields=["processing_status", "updated_at"]
+    )
 
     try:
         # Open the original file through Django's configured storage backend.
         with open_document(document_version.storage_key) as stored_file:
-            # Pass the original filename so extraction can identify the format.
             extracted_text = extract_text(
                 stored_file,
                 filename=document_version.original_filename,
@@ -48,7 +47,7 @@ def ingest_document(
         texts = [chunk.content for chunk in chunks]
         embeddings = generate_embeddings(texts)
 
-        # Persist chunks and mark the version processed in one transaction.
+        # Persist chunks and mark processing complete atomically.
         with transaction.atomic():
             save_document_chunks(
                 document_version=document_version,
@@ -56,15 +55,19 @@ def ingest_document(
                 embeddings=embeddings,
             )
 
-            # Record success only after chunk persistence succeeds.
             document_version.processing_status = (
                 KnowledgeDocumentVersion.ProcessingStatus.PROCESSED
             )
+            document_version.processed_at = timezone.now()
+
             document_version.save(
-                update_fields=["processing_status", "updated_at"]
+                update_fields=[
+                    "processing_status",
+                    "processed_at",
+                    "updated_at",
+                ]
             )
 
-        # Return the number of chunks successfully ingested.
         return len(chunks)
 
     except Exception as exc:

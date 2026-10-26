@@ -64,6 +64,39 @@ class UserManagerTest(TestCase):
             admin.check_password("AdminPass123!")
         )
 
+    def test_create_superuser_requires_is_staff_true(self):
+        with self.assertRaisesMessage(
+            ValueError,
+            "Superuser must have is_staff=True.",
+        ):
+            User.objects.create_superuser(
+                email="invalid.staff@example.com",
+                password="Strong-Test-Password-123!",
+                is_staff=False,
+            )
+
+    def test_create_superuser_requires_is_superuser_true(self):
+        with self.assertRaisesMessage(
+            ValueError,
+            "Superuser must have is_superuser=True.",
+        ):
+            User.objects.create_superuser(
+                email="invalid.superuser@example.com",
+                password="Strong-Test-Password-123!",
+                is_superuser=False,
+            )
+
+    def test_create_superuser_requires_admin_role(self):
+        with self.assertRaisesMessage(
+            ValueError,
+            "Superuser must have role=ADMIN.",
+        ):
+            User.objects.create_superuser(
+                email="invalid.role@example.com",
+                password="Strong-Test-Password-123!",
+                role=User.Role.CUSTOMER,
+            )
+
 
 class UserModelTest(TestCase):
     """Tests for the custom User model."""

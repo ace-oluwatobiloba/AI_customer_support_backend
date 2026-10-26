@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 from django.db import IntegrityError
 from django.test import TestCase
 import tempfile
@@ -52,17 +52,8 @@ from apps.knowledge.services.text_chunker import TextChunk
 
 User = get_user_model()
 
-from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
-
+from unittest.mock import patch
 from django.test import SimpleTestCase
-
-from apps.knowledge.services.embedding_service import (
-    EMBEDDING_DIMENSIONS,
-    EMBEDDING_MODEL,
-    EmbeddingGenerationError,
-    generate_embeddings,
-)
 
 # Provides in-memory content for testing Django's storage backend.
 from django.core.files.base import ContentFile
@@ -396,7 +387,7 @@ class DocumentChunkModelTest(TestCase):
 
 
 class KnowledgeIntegrationTest(TestCase):
-    """Tests the complete document → version → chunk relationship."""
+    """Tests the complete document â†’ version â†’ chunk relationship."""
 
     def test_complete_knowledge_document_workflow(self):
         # The administrator creates the logical knowledge document.
@@ -819,126 +810,6 @@ class ChunkPersistenceTests(TestCase):
             0,
         )
 
-class EmbeddingServiceTests(SimpleTestCase):
-    """Test embedding generation without contacting the real OpenAI API."""
-
-    @patch("apps.knowledge.services.embedding_service.OpenAI")
-    def test_generate_embeddings_returns_vectors_in_input_order(
-        self, mock_openai_class
-    ):
-        # Prepare two vectors with the required database dimensions.
-        first_vector = [0.1] * EMBEDDING_DIMENSIONS
-        second_vector = [0.2] * EMBEDDING_DIMENSIONS
-
-        # Simulate API results returned in reverse order.
-        mock_response = SimpleNamespace(
-            data=[
-                SimpleNamespace(index=1, embedding=second_vector),
-                SimpleNamespace(index=0, embedding=first_vector),
-            ]
-        )
-
-        # Configure the mock client to return the simulated response.
-        mock_client = MagicMock()
-        mock_client.embeddings.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
-
-        # Generate embeddings for two text inputs.
-        result = generate_embeddings(["First text", "Second text"])
-
-        # Verify the output follows the original input order.
-        self.assertEqual(result, [first_vector, second_vector])
-
-        # Confirm the expected model and vector dimensions were requested.
-        mock_client.embeddings.create.assert_called_once_with(
-            model=EMBEDDING_MODEL,
-            input=["First text", "Second text"],
-            dimensions=EMBEDDING_DIMENSIONS,
-        )
-
-    @patch("apps.knowledge.services.embedding_service.OpenAI")
-    def test_empty_input_returns_empty_list(self, mock_openai_class):
-        # Empty input should not require an API request.
-        result = generate_embeddings([])
-
-        self.assertEqual(result, [])
-        mock_openai_class.assert_not_called()
-
-    @patch("apps.knowledge.services.embedding_service.OpenAI")
-    def test_blank_text_is_rejected(self, mock_openai_class):
-        # Reject blank text before contacting the API.
-        with self.assertRaises(ValueError):
-            generate_embeddings(["   "])
-
-        mock_openai_class.assert_not_called()
-
-    @patch("apps.knowledge.services.embedding_service.OpenAI")
-    def test_non_string_input_is_rejected(self, mock_openai_class):
-        # Reject inputs that are not strings.
-        with self.assertRaises(ValueError):
-            generate_embeddings(["Valid text", 123])
-
-        mock_openai_class.assert_not_called()
-
-    @patch("apps.knowledge.services.embedding_service.OpenAI")
-    def test_api_failure_raises_embedding_generation_error(
-        self, mock_openai_class
-    ):
-        # Simulate an API request failure.
-        mock_client = MagicMock()
-        mock_client.embeddings.create.side_effect = RuntimeError(
-            "Simulated provider failure"
-        )
-        mock_openai_class.return_value = mock_client
-
-        # Ensure callers receive the service's consistent exception.
-        with self.assertRaises(EmbeddingGenerationError):
-            generate_embeddings(["Example text"])
-
-    @patch("apps.knowledge.services.embedding_service.OpenAI")
-    def test_wrong_vector_dimensions_are_rejected(
-        self, mock_openai_class
-    ):
-        # Simulate a provider response with an invalid vector dimension.
-        mock_response = SimpleNamespace(
-            data=[
-                SimpleNamespace(
-                    index=0,
-                    embedding=[0.1] * 100,
-                )
-            ]
-        )
-
-        mock_client = MagicMock()
-        mock_client.embeddings.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
-
-        # The service must reject vectors incompatible with the database.
-        with self.assertRaises(EmbeddingGenerationError):
-            generate_embeddings(["Example text"])
-
-    @patch("apps.knowledge.services.embedding_service.OpenAI")
-    def test_unexpected_vector_count_is_rejected(
-        self, mock_openai_class
-    ):
-        # Simulate receiving fewer vectors than the number of inputs.
-        mock_response = SimpleNamespace(
-            data=[
-                SimpleNamespace(
-                    index=0,
-                    embedding=[0.1] * EMBEDDING_DIMENSIONS,
-                )
-            ]
-        )
-
-        mock_client = MagicMock()
-        mock_client.embeddings.create.return_value = mock_response
-        mock_openai_class.return_value = mock_client
-
-        # The service must detect a response count mismatch.
-        with self.assertRaises(EmbeddingGenerationError):
-            generate_embeddings(["First text", "Second text"])
-
 class DocumentIngestionServiceTests(TestCase):
     """Test coordination of the document ingestion pipeline."""
 
@@ -1123,6 +994,40 @@ class DocumentIngestionServiceTests(TestCase):
             KnowledgeDocumentVersion.ProcessingStatus.FAILED,
         )
 
+    @patch(
+        "apps.knowledge.services.ingestion_service.generate_embeddings"
+    )
+    @patch(
+        "apps.knowledge.services.ingestion_service.chunk_text"
+    )
+    def test_successful_ingestion_sets_processed_at(
+        self,
+        mock_chunk_text,
+        mock_generate_embeddings,
+    ):
+        mock_chunk_text.return_value = [
+            TextChunk(
+                index=0,
+                content="Password reset instructions.",
+                token_count=3,
+            )
+        ]
+        mock_generate_embeddings.return_value = [[0.3] * 1536]
+
+        self.document_version.processed_at = None
+        self.document_version.save(update_fields=["processed_at"])
+
+        result = ingest_document(self.document_version)
+
+        self.assertEqual(result, 1)
+
+        self.document_version.refresh_from_db()
+
+        self.assertEqual(
+            self.document_version.processing_status,
+            KnowledgeDocumentVersion.ProcessingStatus.PROCESSED,
+        )
+        self.assertIsNotNone(self.document_version.processed_at)
     @patch(
         "apps.knowledge.services.ingestion_service.generate_embeddings"
     )

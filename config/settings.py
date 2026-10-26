@@ -53,6 +53,7 @@ INSTALLED_APPS = [
 
     # Django REST Framework provides the foundation for our REST APIs.
     'rest_framework',
+    'drf_spectacular',
 
     'apps.accounts',
     'apps.support',
@@ -207,21 +208,36 @@ STORAGES = {
     },
 }
 
-# Default API security configuration.
-# Individual endpoints can override these settings when necessary.
+# Default API security and documentation configuration.
 REST_FRAMEWORK = {
     # Authenticate API requests using JWT access tokens.
-    'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+    "apps.accounts.authentication.EligibleAccountJWTAuthentication",
     ],
 
     # Require authentication unless an endpoint explicitly permits public access.
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.IsAuthenticated',
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.IsAuthenticated",
     ],
 
-    # Generate consistent API responses for invalid or unauthorized requests.
-    'DEFAULT_RENDERER_CLASSES': [
-        'rest_framework.renderers.JSONRenderer',
+    # Return JSON responses rather than enabling the browsable API.
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
     ],
+
+    # Generate the OpenAPI 3 schema using drf-spectacular.
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# OpenAPI documentation configuration.
+SPECTACULAR_SETTINGS = {
+    "TITLE": "AI Customer Support Backend API",
+    "DESCRIPTION": (
+        "REST API for customer support, including authentication, "
+        "knowledge-base management, ticket management, assignments, "
+        "and escalation workflows."
+    ),
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@2.5.0",
 }

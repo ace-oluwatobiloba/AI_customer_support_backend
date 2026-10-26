@@ -1,0 +1,13 @@
+﻿AceXcell Customer Support Test Policy
+
+Account Access:
+Customers who cannot access their accounts should first verify that they are using the correct registered email address.
+
+Password Reset:
+Customers who forget their passwords should use the password reset feature. They should never share their passwords or verification codes with support agents.
+
+Escalation:
+If a customer cannot resolve an account access problem after following the documented steps, the support system should create or update a support ticket for review by a human support agent.
+
+Business Hours:
+Support requests should be recorded even when human agents are unavailable. The system should retain the conversation and allow the support team to follow up.
