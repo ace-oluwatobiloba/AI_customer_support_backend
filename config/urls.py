@@ -12,6 +12,8 @@ from drf_spectacular.views import (
 
 from config.home_views import home
 
+from apps.conversations.views import chat_page
+
 
 urlpatterns = [
     # Project landing page.
@@ -19,8 +21,8 @@ urlpatterns = [
 
     # Django administration.
     path(
-    "admin/",
-    secure_admin_site.urls,
+        "admin/",
+        secure_admin_site.urls,
     ),
 
     # OpenAPI schema and interactive documentation.
@@ -52,9 +54,30 @@ urlpatterns = [
         include("apps.knowledge.urls"),
     ),
 
+    # User notification API.
+    path(
+        "api/v1/notifications/",
+        include("apps.notifications.urls"),
+    ),
+
+    # Administrator-only audit API.
+    path(
+        "api/v1/audit/",
+        include("apps.audit.urls"),
+    ),
+
     # Support ticket API.
     path(
         "api/v1/support/",
         include("apps.support.urls"),
     ),
+
+    # Conversation and messaging API.
+    path(
+        "api/v1/conversations/",
+        include("apps.conversations.urls"),
+    ),
+
+    # Chat page for customer support.
+    path("chat/", chat_page, name="chat-page"),
 ]

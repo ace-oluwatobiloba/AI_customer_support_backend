@@ -212,3 +212,39 @@ class AgentProfile(models.Model):
 
     def __str__(self):
         return self.employee_code
+
+class EmployeeInvitation(models.Model):
+    """Single-use invitation authorizing an employee to create an Agent account."""
+
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending"
+        ACCEPTED = "ACCEPTED", "Accepted"
+        REVOKED = "REVOKED", "Revoked"
+        EXPIRED = "EXPIRED", "Expired"
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    email = models.EmailField(db_index=True)
+    invited_by = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name="employee_invitations_sent"
+    )
+    employee_code = models.CharField(max_length=50, unique=True)
+    department = models.CharField(max_length=100, blank=True, null=True)
+    specialization = models.CharField(max_length=255, blank=True, null=True)
+    token_hash = models.CharField(max_length=64, unique=True)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDING)
+    expires_at = models.DateTimeField()
+    accepted_at = models.DateTimeField(blank=True, null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["email"],
+                condition=models.Q(status="PENDING"),
+                name="unique_pending_employee_invite_email",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.email} ({self.status})"

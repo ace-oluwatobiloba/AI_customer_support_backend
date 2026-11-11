@@ -140,3 +140,141 @@ class AuditLogModelTests(TestCase):
 
         self.assertIsNone(audit_log.actor)
         self.assertEqual(audit_log.action, "USER_LOGIN")
+
+class AuditServiceTests(TestCase):
+    """Tests for the centralized audit-event service."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(
+            email="audit-service-test@example.com",
+            password="TestPassword!123",
+        )
+
+    def test_records_event_from_model_instance(self):
+        from apps.audit.services import record_audit_event
+
+        event = record_audit_event(
+            actor=self.user,
+            action="TEST_EVENT",
+            entity=self.user,
+            metadata={"source": "unit_test"},
+        )
+
+        self.assertEqual(event.actor, self.user)
+        self.assertEqual(event.entity_type, "User")
+        self.assertEqual(event.entity_id, self.user.pk)
+        self.assertEqual(event.metadata, {"source": "unit_test"})
+
+    def test_records_system_event_without_actor_or_entity_id(self):
+        from apps.audit.services import record_audit_event
+
+        event = record_audit_event(
+            action="SYSTEM_MAINTENANCE_COMPLETED",
+            entity_type="System",
+        )
+
+        self.assertIsNone(event.actor)
+        self.assertEqual(event.entity_type, "System")
+        self.assertIsNone(event.entity_id)
+
+    def test_anonymous_actor_is_recorded_as_none(self):
+        from django.contrib.auth.models import AnonymousUser
+        from apps.audit.services import record_audit_event
+
+        event = record_audit_event(
+            actor=AnonymousUser(),
+            action="ANONYMOUS_ACTION",
+            entity_type="Authentication",
+        )
+
+        self.assertIsNone(event.actor)
+
+    def test_captures_request_ip_and_user_agent(self):
+        from django.test import RequestFactory
+        from apps.audit.services import record_audit_event
+
+        request = RequestFactory().post("/test/")
+        request.META["REMOTE_ADDR"] = "192.0.2.10"
+        request.META["HTTP_USER_AGENT"] = "AuditServiceTests/1.0"
+
+        event = record_audit_event(
+            actor=self.user,
+            action="REQUEST_EVENT",
+            entity_type="TestResource",
+            request=request,
+        )
+
+        self.assertEqual(event.ip_address, "192.0.2.10")
+        self.assertEqual(event.user_agent, "AuditServiceTests/1.0")
+
+    def test_does_not_trust_forwarded_for_header(self):
+        from django.test import RequestFactory
+        from apps.audit.services import record_audit_event
+
+        request = RequestFactory().post("/test/")
+        request.META["REMOTE_ADDR"] = "192.0.2.10"
+        request.META["HTTP_X_FORWARDED_FOR"] = "203.0.113.99"
+
+        event = record_audit_event(
+            action="PROXY_REQUEST_EVENT",
+            entity_type="TestResource",
+            request=request,
+        )
+
+        self.assertEqual(event.ip_address, "192.0.2.10")
+
+    def test_rejects_non_dictionary_metadata(self):
+        from django.core.exceptions import ValidationError
+        from apps.audit.services import record_audit_event
+
+        with self.assertRaises(ValidationError):
+            record_audit_event(
+                action="INVALID_METADATA",
+                entity_type="TestResource",
+                metadata=["not", "a", "dictionary"],
+            )
+
+    def test_rejects_invalid_entity_uuid(self):
+        from django.core.exceptions import ValidationError
+        from apps.audit.services import record_audit_event
+
+        with self.assertRaises(ValidationError):
+            record_audit_event(
+                action="INVALID_ENTITY_ID",
+                entity_type="TestResource",
+                entity_id="not-a-uuid",
+            )
+
+    def test_rejects_empty_action_and_entity_type(self):
+        from django.core.exceptions import ValidationError
+        from apps.audit.services import record_audit_event
+
+        with self.assertRaises(ValidationError):
+            record_audit_event(action="  ", entity_type="TestResource")
+        with self.assertRaises(ValidationError):
+            record_audit_event(action="VALID_ACTION", entity_type="  ")
+
+    def test_rejects_conflicting_entity_arguments(self):
+        from django.core.exceptions import ValidationError
+        from apps.audit.services import record_audit_event
+
+        with self.assertRaises(ValidationError):
+            record_audit_event(
+                action="CONFLICTING_ENTITY",
+                entity=self.user,
+                entity_type="User",
+            )
+
+    def test_rejects_unauthenticated_non_anonymous_actor(self):
+        from django.core.exceptions import ValidationError
+        from apps.audit.services import record_audit_event
+
+        class UnauthenticatedActor:
+            is_authenticated = False
+
+        with self.assertRaises(ValidationError):
+            record_audit_event(
+                actor=UnauthenticatedActor(),
+                action="INVALID_ACTOR",
+                entity_type="TestResource",
+            )

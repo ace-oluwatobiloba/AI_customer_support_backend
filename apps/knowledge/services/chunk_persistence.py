@@ -5,7 +5,7 @@ from django.db import transaction
 from apps.knowledge.models import DocumentChunk, KnowledgeDocumentVersion
 
 
-# Keep this dimension consistent with text-embedding-3-small.
+# Must match the dimensionality configured in embedding_service.py.
 EMBEDDING_DIMENSIONS = 1536
 
 
@@ -25,11 +25,12 @@ def save_document_chunks(
         raise ChunkPersistenceError(
             "The number of chunks must match the number of embeddings."
         )
-        # Preserve the existing service contract for empty input.
-        # The ingestion service handles documents that produce no chunks.
-        if not chunks:
-            return []
-   
+
+    # Preserve the existing service contract for empty input.
+    # The ingestion service separately rejects documents with no usable text.
+    if not chunks:
+        return []
+
     document_chunks = []
 
     for chunk, embedding in zip(chunks, embeddings):

@@ -1,0 +1,821 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Support | Customer Help</title>
+
+    <style>
+        :root {
+            color-scheme: dark;
+            --background: #0b1120;
+            --panel: #111b2e;
+            --panel-light: #18253a;
+            --border: #28364d;
+            --text: #e7edf7;
+            --muted: #9aa9bd;
+            --accent: #6ea8fe;
+            --danger: #ff8b8b;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--background);
+            color: var(--text);
+            font-family: Inter, "Segoe UI", Arial, sans-serif;
+        }
+
+        button, input, textarea { font: inherit; }
+
+        button {
+            border: 0;
+            border-radius: 9px;
+            padding: 11px 15px;
+            cursor: pointer;
+            background: var(--accent);
+            color: #07111f;
+            font-weight: 650;
+        }
+
+        button:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        input, textarea {
+            width: 100%;
+            padding: 12px;
+            color: var(--text);
+            background: #0c1525;
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            outline: none;
+        }
+
+        input:focus, textarea:focus {
+            border-color: var(--accent);
+        }
+
+        .hidden { display: none !important; }
+
+        .muted { color: var(--muted); }
+
+        .notice {
+            margin-top: 12px;
+            color: var(--danger);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        /* Login screen */
+
+        #login-screen {
+            width: min(420px, calc(100% - 32px));
+            margin: 12vh auto;
+            padding: 30px;
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+        }
+
+        #login-screen h1 { margin-top: 0; }
+
+        .form-field {
+            display: grid;
+            gap: 8px;
+            margin: 18px 0;
+        }
+
+        #login-button { width: 100%; }
+
+        /* Chat application */
+
+        #chat-app {
+            min-height: 100vh;
+            display: grid;
+            grid-template-columns: 280px minmax(0, 1fr);
+        }
+
+        aside {
+            padding: 20px;
+            background: var(--panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            min-width: 0;
+        }
+
+        .brand {
+            font-size: 18px;
+            font-weight: 750;
+            margin-bottom: 8px;
+        }
+
+        .sidebar-heading {
+            margin: 12px 0 0;
+            font-size: 12px;
+            color: var(--muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        #conversation-list {
+            display: grid;
+            align-content: start;
+            gap: 8px;
+            overflow-y: auto;
+        }
+
+        .conversation-item {
+            text-align: left;
+            background: var(--panel-light);
+            color: var(--text);
+            font-weight: 400;
+            overflow-wrap: anywhere;
+        }
+
+        .conversation-item.active {
+            outline: 1px solid var(--accent);
+        }
+
+        #logout-button {
+            margin-top: auto;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text);
+        }
+
+        main {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            height: 100vh;
+        }
+
+        .topbar {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .topbar h1 {
+            margin: 0;
+            font-size: 18px;
+        }
+
+        #messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .welcome {
+            margin: auto;
+            max-width: 520px;
+            text-align: center;
+            color: var(--muted);
+            line-height: 1.7;
+        }
+
+        .message {
+            width: fit-content;
+            max-width: min(760px, 90%);
+            padding: 14px 16px;
+            border: 1px solid var(--border);
+            border-radius: 13px;
+            background: var(--panel);
+            overflow-wrap: anywhere;
+        }
+
+        .message.customer {
+            align-self: flex-end;
+            background: #18304d;
+        }
+
+        .message.ai {
+            align-self: flex-start;
+        }
+
+        .message-label {
+            margin-bottom: 7px;
+            font-size: 12px;
+            color: var(--muted);
+            font-weight: 700;
+        }
+
+        .message-content {
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .sources {
+            margin-top: 12px;
+            padding-top: 10px;
+            border-top: 1px solid var(--border);
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .sources ul {
+            margin: 7px 0 0;
+            padding-left: 20px;
+        }
+
+        .composer {
+            padding: 18px 24px;
+            border-top: 1px solid var(--border);
+        }
+
+        #message-form {
+            display: flex;
+            align-items: flex-end;
+            gap: 12px;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        #message-input {
+            min-height: 48px;
+            max-height: 180px;
+            resize: vertical;
+        }
+
+        #send-button { min-height: 48px; }
+
+        #chat-notice {
+            max-width: 1000px;
+            margin: 10px auto 0;
+            width: 100%;
+        }
+
+        @media (max-width: 720px) {
+            #chat-app {
+                grid-template-columns: 1fr;
+                grid-template-rows: auto minmax(0, 1fr);
+                height: 100vh;
+            }
+
+            aside {
+                padding: 12px;
+                border-right: 0;
+                border-bottom: 1px solid var(--border);
+                gap: 8px;
+            }
+
+            .brand { margin: 0; }
+
+            .sidebar-heading { display: none; }
+
+            #conversation-list {
+                display: flex;
+                overflow-x: auto;
+                padding: 4px 0;
+            }
+
+            .conversation-item { min-width: 150px; }
+
+            #logout-button {
+                position: absolute;
+                top: 10px;
+                right: 12px;
+                padding: 7px 10px;
+            }
+
+            main { min-height: 0; height: auto; }
+
+            .topbar, #messages, .composer {
+                padding: 14px;
+            }
+
+            .message { max-width: 96%; }
+        }
+    </style>
+</head>
+
+<body>
+    <section id="login-screen">
+        <h1>Customer Support</h1>
+        <p class="muted">
+            Sign in to view your conversations and get assistance.
+        </p>
+
+        <form id="login-form">
+            <div class="form-field">
+                <label for="email">Email address</label>
+                <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    autocomplete="username"
+                    required
+                >
+            </div>
+
+            <div class="form-field">
+                <label for="password">Password</label>
+                <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    autocomplete="current-password"
+                    required
+                >
+            </div>
+
+            <button id="login-button" type="submit">Sign in</button>
+            <p id="login-notice" class="notice" role="alert"></p>
+        </form>
+    </section>
+
+    <div id="chat-app" class="hidden">
+        <aside>
+            <div class="brand">AI Support</div>
+
+            <button id="new-conversation-button" type="button">
+                + New conversation
+            </button>
+
+            <h2 class="sidebar-heading">Your conversations</h2>
+            <div id="conversation-list"></div>
+
+            <p id="sidebar-notice" class="muted"></p>
+            <button id="logout-button" type="button">Sign out</button>
+        </aside>
+
+        <main>
+            <header class="topbar">
+                <h1 id="conversation-title">Customer Support</h1>
+                <span class="muted">AI assistant</span>
+            </header>
+
+            <section id="messages" aria-live="polite">
+                <div class="welcome">
+                    <h2>How can we help?</h2>
+                    <p>
+                        Start a conversation to ask a question about our
+                        products, services, or support policies.
+                    </p>
+                </div>
+            </section>
+
+            <footer class="composer">
+                <form id="message-form">
+                    <textarea
+                        id="message-input"
+                        placeholder="Type your question..."
+                        maxlength="10000"
+                        rows="1"
+                        aria-label="Your message"
+                        required
+                    ></textarea>
+                    <button id="send-button" type="submit">Send</button>
+                </form>
+
+                <p id="chat-notice" class="notice" role="alert"></p>
+            </footer>
+        </main>
+    </div>
+
+    <script>
+        (() => {
+            "use strict";
+
+            const API = {
+                login: "/api/v1/auth/token/",
+                conversations: "/api/v1/conversations/"
+            };
+
+            const ACCESS_KEY = "support_access_token";
+            const REFRESH_KEY = "support_refresh_token";
+
+            const $ = (id) => document.getElementById(id);
+
+            const loginScreen = $("login-screen");
+            const chatApp = $("chat-app");
+            const loginForm = $("login-form");
+            const loginButton = $("login-button");
+            const loginNotice = $("login-notice");
+            const sidebarNotice = $("sidebar-notice");
+            const chatNotice = $("chat-notice");
+            const conversationList = $("conversation-list");
+            const conversationTitle = $("conversation-title");
+            const messages = $("messages");
+            const messageForm = $("message-form");
+            const messageInput = $("message-input");
+            const sendButton = $("send-button");
+
+            let currentConversationId = null;
+            let isSending = false;
+
+            function showNotice(element, message = "") {
+                element.textContent = message;
+            }
+
+            function getAccessToken() {
+                return sessionStorage.getItem(ACCESS_KEY);
+            }
+
+            function showChat() {
+                loginScreen.classList.add("hidden");
+                chatApp.classList.remove("hidden");
+            }
+
+            function showLogin() {
+                chatApp.classList.add("hidden");
+                loginScreen.classList.remove("hidden");
+            }
+
+            function logout(message = "") {
+                sessionStorage.removeItem(ACCESS_KEY);
+                sessionStorage.removeItem(REFRESH_KEY);
+                currentConversationId = null;
+                conversationList.replaceChildren();
+                messages.replaceChildren();
+                showNotice(loginNotice, message);
+                showNotice(chatNotice);
+                showNotice(sidebarNotice);
+                loginForm.reset();
+                showLogin();
+            }
+
+            async function apiRequest(url, options = {}) {
+                const headers = new Headers(options.headers || {});
+                headers.set("Accept", "application/json");
+
+                if (options.body !== undefined) {
+                    headers.set("Content-Type", "application/json");
+                }
+
+                const token = getAccessToken();
+                if (token) {
+                    headers.set("Authorization", `Bearer ${token}`);
+                }
+
+                const response = await fetch(url, {
+                    ...options,
+                    headers
+                });
+
+                const contentType = response.headers.get("content-type") || "";
+                let data = null;
+
+                if (contentType.includes("application/json")) {
+                    data = await response.json();
+                } else if (response.status !== 204) {
+                    data = await response.text();
+                }
+
+                if (response.status === 401 && token) {
+                    logout("Your session has expired. Please sign in again.");
+                    throw new Error("Your session has expired.");
+                }
+
+                if (!response.ok) {
+                    let message = "The request could not be completed.";
+
+                    if (data && typeof data === "object") {
+                        message = data.detail || JSON.stringify(data);
+                    } else if (typeof data === "string" && data) {
+                        message = data;
+                    }
+
+                    throw new Error(message);
+                }
+
+                return data;
+            }
+
+            function addMessage(message) {
+                const isCustomer = message.sender_type === "CUSTOMER";
+                const bubble = document.createElement("article");
+                bubble.className = `message ${isCustomer ? "customer" : "ai"}`;
+
+                const label = document.createElement("div");
+                label.className = "message-label";
+                label.textContent = isCustomer
+                    ? "You"
+                    : message.sender_type === "AGENT"
+                        ? "Support agent"
+                        : message.sender_type === "SYSTEM"
+                            ? "System"
+                            : "AI assistant";
+
+                const content = document.createElement("div");
+                content.className = "message-content";
+                content.textContent = message.content || "";
+
+                bubble.append(label, content);
+
+                const sources = message.metadata?.sources;
+
+                if (!isCustomer && Array.isArray(sources) && sources.length) {
+                    const sourceBox = document.createElement("div");
+                    sourceBox.className = "sources";
+
+                    const heading = document.createElement("strong");
+                    heading.textContent = "Knowledge sources";
+                    sourceBox.appendChild(heading);
+
+                    const list = document.createElement("ul");
+
+                    sources.forEach((source) => {
+                        const item = document.createElement("li");
+                        const title = source.document_title || "Knowledge document";
+
+                        item.textContent =
+                            `${title} — version ${source.version_number ?? "?"}, ` +
+                            `chunk ${source.chunk_index ?? "?"}`;
+
+                        list.appendChild(item);
+                    });
+
+                    sourceBox.appendChild(list);
+                    bubble.appendChild(sourceBox);
+                }
+
+                messages.appendChild(bubble);
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            function showWelcome() {
+                messages.replaceChildren();
+
+                const welcome = document.createElement("div");
+                welcome.className = "welcome";
+
+                const heading = document.createElement("h2");
+                heading.textContent = "How can we help?";
+
+                const paragraph = document.createElement("p");
+                paragraph.textContent =
+                    "Select a conversation or start a new one to ask a question.";
+
+                welcome.append(heading, paragraph);
+                messages.appendChild(welcome);
+            }
+
+            async function loadConversations() {
+                showNotice(sidebarNotice);
+
+                const data = await apiRequest(API.conversations);
+                const conversations = Array.isArray(data)
+                    ? data
+                    : data.results || [];
+
+                conversationList.replaceChildren();
+
+                conversations.forEach((conversation) => {
+                    const button = document.createElement("button");
+                    button.type = "button";
+                    button.className = "conversation-item";
+                    button.textContent =
+                        conversation.title || "Support conversation";
+
+                    button.dataset.id = conversation.id;
+                    button.classList.toggle(
+                        "active",
+                        conversation.id === currentConversationId
+                    );
+
+                    button.addEventListener("click", () => {
+                        openConversation(conversation.id);
+                    });
+
+                    conversationList.appendChild(button);
+                });
+
+                return conversations;
+            }
+
+            async function openConversation(id) {
+                currentConversationId = id;
+                showNotice(chatNotice);
+                showWelcome();
+                conversationTitle.textContent = "Loading conversation...";
+                messageInput.disabled = true;
+                sendButton.disabled = true;
+
+                try {
+                    const conversation = await apiRequest(
+                        `${API.conversations}${encodeURIComponent(id)}/`
+                    );
+
+                    if (currentConversationId !== id) return;
+
+                    conversationTitle.textContent =
+                        conversation.title || "Support conversation";
+
+                    const data = await apiRequest(
+                        `${API.conversations}${encodeURIComponent(id)}/messages/`
+                    );
+
+                    if (currentConversationId !== id) return;
+
+                    const history = Array.isArray(data)
+                        ? data
+                        : data.results || [];
+
+                    messages.replaceChildren();
+
+                    if (history.length === 0) {
+                        showWelcome();
+                    } else {
+                        history.forEach(addMessage);
+                    }
+
+                    messageInput.disabled = false;
+                    sendButton.disabled = false;
+
+                    await loadConversations();
+                } catch (error) {
+                    showNotice(chatNotice, error.message);
+                    if (getAccessToken()) {
+                        messageInput.disabled = false;
+                        sendButton.disabled = false;
+                    }
+                }
+            }
+
+            async function createConversation() {
+                showNotice(sidebarNotice);
+
+                try {
+                    const conversation = await apiRequest(
+                        API.conversations,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({
+                                title: "Support conversation"
+                            })
+                        }
+                    );
+
+                    await loadConversations();
+                    await openConversation(conversation.id);
+                    messageInput.focus();
+                } catch (error) {
+                    showNotice(sidebarNotice, error.message);
+                }
+            }
+
+            loginForm.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                showNotice(loginNotice);
+
+                loginButton.disabled = true;
+                loginButton.textContent = "Signing in...";
+
+                try {
+                    const response = await fetch(API.login, {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json"
+                        },
+                        body: JSON.stringify({
+                            email: $("email").value.trim(),
+                            password: $("password").value
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok) {
+                        throw new Error(
+                            data.detail ||
+                            "Sign-in failed. Check your credentials and account verification."
+                        );
+                    }
+
+                    if (!data.access) {
+                        throw new Error(
+                            "The login endpoint did not return an access token."
+                        );
+                    }
+
+                    sessionStorage.setItem(ACCESS_KEY, data.access);
+
+                    if (data.refresh) {
+                        sessionStorage.setItem(REFRESH_KEY, data.refresh);
+                    }
+
+                    showChat();
+
+                    const conversations = await loadConversations();
+
+                    if (conversations.length) {
+                        await openConversation(conversations[0].id);
+                    } else {
+                        showWelcome();
+                    }
+                } catch (error) {
+                    logout(error.message);
+                } finally {
+                    loginButton.disabled = false;
+                    loginButton.textContent = "Sign in";
+                }
+            });
+
+            $("new-conversation-button").addEventListener(
+                "click",
+                createConversation
+            );
+
+            $("logout-button").addEventListener("click", () => logout());
+
+            messageForm.addEventListener("submit", async (event) => {
+                event.preventDefault();
+
+                const content = messageInput.value.trim();
+
+                if (!content || !currentConversationId || isSending) {
+                    return;
+                }
+
+                isSending = true;
+                sendButton.disabled = true;
+                messageInput.disabled = true;
+                showNotice(chatNotice);
+
+                try {
+                    const result = await apiRequest(
+                        `${API.conversations}${encodeURIComponent(currentConversationId)}/messages/`,
+                        {
+                            method: "POST",
+                            body: JSON.stringify({ content })
+                        }
+                    );
+
+                    if (result.customer_message) {
+                        addMessage(result.customer_message);
+                    }
+
+                    if (result.assistant_message) {
+                        addMessage(result.assistant_message);
+                    }
+
+                    messageInput.value = "";
+                    await loadConversations();
+                } catch (error) {
+                    showNotice(chatNotice, error.message);
+
+                    // A 503 response may include the saved customer message.
+                    // apiRequest throws on non-2xx responses, so that payload
+                    // is not available here; history can be reloaded instead.
+                    if (currentConversationId && getAccessToken()) {
+                        try {
+                            const data = await apiRequest(
+                                `${API.conversations}${encodeURIComponent(currentConversationId)}/messages/`
+                            );
+
+                            const history = Array.isArray(data)
+                                ? data
+                                : data.results || [];
+
+                            messages.replaceChildren();
+                            history.forEach(addMessage);
+                        } catch (_) {
+                            // Preserve the original error notice.
+                        }
+                    }
+                } finally {
+                    isSending = false;
+
+                    if (getAccessToken()) {
+                        sendButton.disabled = false;
+                        messageInput.disabled = false;
+                        messageInput.focus();
+                    }
+                }
+            });
+
+            // Restore the visible state if the current tab already has a token.
+            if (getAccessToken()) {
+                showChat();
+
+                loadConversations()
+                    .then((conversations) => {
+                        if (conversations.length) {
+                            return openConversation(conversations[0].id);
+                        }
+                        showWelcome();
+                    })
+                    .catch((error) => {
+                        showNotice(chatNotice, error.message);
+                    });
+            }
+        })();
+    </script>
+</body>
+</html>

@@ -104,6 +104,9 @@ class Message(models.Model):
         # A response written by a human support agent.
         AGENT = "AGENT", "Agent"
 
+        # Replies written by an administrator acting as support staff.
+        ADMIN = "ADMIN", "Administrator"
+
         # Internal/system-generated events or notifications.
         SYSTEM = "SYSTEM", "System"
 

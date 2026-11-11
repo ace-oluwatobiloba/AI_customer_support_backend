@@ -5,7 +5,10 @@ from apps.support.models import Ticket, TicketAssignment
 from apps.support.services import (
     TicketAssignmentError,
     assign_ticket,
+    auto_assign_ticket,
 )
+from apps.notifications.models import Notification
+from django.test import override_settings
 
 User = get_user_model()
 
@@ -160,3 +163,163 @@ class TicketAssignmentServiceTests(TestCase):
                 agent_id=self.agent.id,
                 assigned_by=self.admin,
             )
+
+    def test_auto_assigns_ticket_to_eligible_agent(self):
+        self.ticket.status = Ticket.Status.ESCALATED
+        self.ticket.save(update_fields=["status"])
+
+        assignment = auto_assign_ticket(ticket_id=self.ticket.id)
+
+        self.assertIsNotNone(assignment)
+        self.assertEqual(assignment.ticket, self.ticket)
+        self.assertEqual(assignment.agent.role, User.Role.AGENT)
+        self.assertIsNone(assignment.assigned_by)
+        self.assertIsNone(assignment.unassigned_at)
+        self.assertIn("Automated assignment", assignment.reason)
+
+        notification = Notification.objects.get(
+            user=assignment.agent,
+            notification_type=Notification.Type.TICKET_ASSIGNED,
+        )
+
+    def test_auto_assigns_to_least_loaded_agent(self):
+        # Give the first agent one active ticket.
+        existing_ticket = Ticket.objects.create(
+            ticket_number="TKT-20261027-LOAD0001",
+            customer=self.customer,
+            created_by=self.customer,
+            created_source=Ticket.CreatedSource.CUSTOMER,
+            title="Existing workload",
+            description="An existing assigned ticket.",
+            category=Ticket.Category.OTHER,
+            status=Ticket.Status.IN_PROGRESS,
+        )
+
+        TicketAssignment.objects.create(
+            ticket=existing_ticket,
+            agent=self.agent,
+            assigned_by=self.admin,
+            reason="Existing assignment",
+        )
+
+        self.ticket.status = Ticket.Status.ESCALATED
+        self.ticket.save(update_fields=["status"])
+
+        assignment = auto_assign_ticket(ticket_id=self.ticket.id)
+
+        self.assertEqual(assignment.agent, self.second_agent)
+
+    @override_settings(SUPPORT_AGENT_MAX_ACTIVE_TICKETS=1)
+    def test_auto_assignment_excludes_agents_at_capacity(self):
+        existing_ticket = Ticket.objects.create(
+            ticket_number="TKT-20261027-CAP00001",
+            customer=self.customer,
+            created_by=self.customer,
+            created_source=Ticket.CreatedSource.CUSTOMER,
+            title="Agent at capacity",
+            description="This agent already has an active ticket.",
+            category=Ticket.Category.OTHER,
+            status=Ticket.Status.IN_PROGRESS,
+        )
+
+        TicketAssignment.objects.create(
+            ticket=existing_ticket,
+            agent=self.agent,
+            assigned_by=self.admin,
+            reason="Existing assignment",
+        )
+
+        self.ticket.status = Ticket.Status.ESCALATED
+        self.ticket.save(update_fields=["status"])
+
+        assignment = auto_assign_ticket(ticket_id=self.ticket.id)
+
+        self.assertEqual(assignment.agent, self.second_agent)
+
+
+    @override_settings(SUPPORT_AGENT_MAX_ACTIVE_TICKETS=1)
+    def test_returns_none_when_all_agents_are_at_capacity(self):
+        for index, agent in enumerate(
+            [self.agent, self.second_agent],
+            start=1,
+        ):
+            existing_ticket = Ticket.objects.create(
+                ticket_number=f"TKT-20261027-FULL{index:04d}",
+                customer=self.customer,
+                created_by=self.customer,
+                created_source=Ticket.CreatedSource.CUSTOMER,
+                title=f"Existing ticket {index}",
+                description="Ticket occupying agent capacity.",
+                category=Ticket.Category.OTHER,
+                status=Ticket.Status.IN_PROGRESS,
+            )
+
+            TicketAssignment.objects.create(
+                ticket=existing_ticket,
+                agent=agent,
+                assigned_by=self.admin,
+                reason="Existing assignment",
+            )
+
+        self.ticket.status = Ticket.Status.ESCALATED
+        self.ticket.save(update_fields=["status"])
+
+        assignment = auto_assign_ticket(ticket_id=self.ticket.id)
+
+        self.assertIsNone(assignment)
+        self.assertFalse(
+            TicketAssignment.objects.filter(
+                ticket=self.ticket,
+                unassigned_at__isnull=True,
+            ).exists()
+        )
+        self.ticket.refresh_from_db()
+        self.assertEqual(self.ticket.status, Ticket.Status.ESCALATED)
+
+    def test_auto_assignment_does_not_replace_existing_assignment(self):
+        existing_assignment = TicketAssignment.objects.create(
+            ticket=self.ticket,
+            agent=self.agent,
+            assigned_by=self.admin,
+            reason="Existing manual assignment",
+        )
+
+        result = auto_assign_ticket(ticket_id=self.ticket.id)
+
+        self.assertEqual(result.id, existing_assignment.id)
+        self.assertEqual(
+            TicketAssignment.objects.filter(
+                ticket=self.ticket,
+                unassigned_at__isnull=True,
+            ).count(),
+            1,
+        )
+        self.assertFalse(
+            Notification.objects.filter(
+                user=self.second_agent,
+                notification_type=Notification.Type.TICKET_ASSIGNED,
+            ).exists()
+        )
+
+
+    def test_auto_assignment_excludes_inactive_agents(self):
+        self.agent.is_active = False
+        self.agent.save(update_fields=["is_active"])
+
+        self.ticket.status = Ticket.Status.ESCALATED
+        self.ticket.save(update_fields=["status"])
+
+        assignment = auto_assign_ticket(ticket_id=self.ticket.id)
+
+        self.assertEqual(assignment.agent, self.second_agent)
+
+    def test_auto_assignment_excludes_suspended_agents(self):
+        self.agent.status = User.Status.SUSPENDED
+        self.agent.save(update_fields=["status"])
+
+        self.ticket.status = Ticket.Status.ESCALATED
+        self.ticket.save(update_fields=["status"])
+
+        assignment = auto_assign_ticket(ticket_id=self.ticket.id)
+
+        self.assertEqual(assignment.agent, self.second_agent)

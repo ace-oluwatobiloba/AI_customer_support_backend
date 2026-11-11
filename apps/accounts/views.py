@@ -160,3 +160,125 @@ class EligibleAccountTokenRefreshView(TokenRefreshView):
     permission_classes = [AllowAny]
     authentication_classes = []
     serializer_class = EligibleAccountTokenRefreshSerializer
+
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.generics import ListAPIView
+from rest_framework.exceptions import PermissionDenied
+from django.shortcuts import get_object_or_404
+from apps.accounts.models import AgentProfile, EmployeeInvitation, User
+from apps.accounts.serializers.employee_onboarding import (
+    EmployeeInvitationCreateSerializer,
+    EmployeeInvitationAcceptSerializer,
+    AgentManagementSerializer,
+    AgentStatusSerializer,
+)
+from apps.accounts.services.employee_onboarding import (
+    EmployeeOnboardingError,
+    EmployeeInvitationDeliveryError,
+    invite_employee,
+    accept_employee_invitation,
+)
+
+
+class ActiveAdministratorPermission:
+    """Small reusable guard for administrator-only account operations."""
+
+    @staticmethod
+    def check(user):
+        if not (
+            user.is_authenticated
+            and user.role == User.Role.ADMIN
+            and user.status == User.Status.ACTIVE
+            and user.is_active
+        ):
+            raise PermissionDenied("Active administrator access is required.")
+
+
+class EmployeeInvitationView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(
+        request=EmployeeInvitationCreateSerializer,
+        responses={201: OpenApiResponse(description="Employee invitation created and emailed.")},
+        tags=["Employee Management"],
+    )
+    def post(self, request):
+        ActiveAdministratorPermission.check(request.user)
+        serializer = EmployeeInvitationCreateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            invitation = invite_employee(invited_by=request.user, **serializer.validated_data)
+        except EmployeeInvitationDeliveryError as exc:
+            return Response(
+                {"detail": str(exc)},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+        except EmployeeOnboardingError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"id": str(invitation.pk), "email": invitation.email,
+             "employee_code": invitation.employee_code, "status": invitation.status,
+             "expires_at": invitation.expires_at},
+            status=status.HTTP_201_CREATED,
+        )
+
+    @extend_schema(tags=["Employee Management"])
+    def get(self, request):
+        ActiveAdministratorPermission.check(request.user)
+        invitations = EmployeeInvitation.objects.select_related("invited_by")
+        data = [{
+            "id": str(item.pk), "email": item.email, "employee_code": item.employee_code,
+            "department": item.department, "status": item.status,
+            "expires_at": item.expires_at, "created_at": item.created_at,
+        } for item in invitations]
+        return Response(data)
+
+
+class EmployeeInvitationAcceptView(APIView):
+    permission_classes = [AllowAny]
+    authentication_classes = []
+
+    @extend_schema(
+        request=EmployeeInvitationAcceptSerializer,
+        responses={201: OpenApiResponse(description="Agent account created.")},
+        tags=["Employee Management"],
+    )
+    def post(self, request):
+        serializer = EmployeeInvitationAcceptSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        try:
+            user = accept_employee_invitation(**serializer.validated_data)
+        except EmployeeOnboardingError as exc:
+            return Response({"detail": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {"message": "Employee account activated.",
+             "user": {"id": str(user.pk), "email": user.email, "role": user.role,
+                      "email_verified": user.email_verified}},
+            status=status.HTTP_201_CREATED,
+        )
+
+
+class AgentListView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(tags=["Employee Management"])
+    def get(self, request):
+        ActiveAdministratorPermission.check(request.user)
+        agents = User.objects.filter(role=User.Role.AGENT).select_related("agent_profile")
+        return Response(AgentManagementSerializer(agents, many=True).data)
+
+
+class AgentStatusView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    @extend_schema(request=AgentStatusSerializer, tags=["Employee Management"])
+    def patch(self, request, user_id):
+        ActiveAdministratorPermission.check(request.user)
+        agent = get_object_or_404(User, pk=user_id, role=User.Role.AGENT)
+        serializer = AgentStatusSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_status = serializer.validated_data["status"]
+        agent.status = new_status
+        agent.is_active = new_status == User.Status.ACTIVE
+        agent.save(update_fields=["status", "is_active", "updated_at"])
+        return Response(AgentManagementSerializer(agent).data)

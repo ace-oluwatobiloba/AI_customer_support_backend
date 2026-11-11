@@ -35,11 +35,15 @@ if not SECRET_KEY:
     raise RuntimeError(
         "DJANGO_SECRET_KEY must be configured in the environment."
     )
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+# Read deployment settings from environment variables.
+DEBUG = os.getenv("DJANGO_DEBUG", "True").strip().lower() == "true"
 
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.getenv("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
+    if host.strip()
+]
 
 # Application definition
 
@@ -153,37 +157,21 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/6.1/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # ============================================================
-# EMAIL CONFIGURATION — Django 6.1+
-# Gmail SMTP
+# TRANSACTIONAL EMAIL — Resend HTTP API
 # ============================================================
 
-MAIL_USERNAME = os.getenv("EMAIL_HOST_USER", "").strip()
-MAIL_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "").strip()
-
-DEFAULT_FROM_EMAIL = os.getenv(
-    "DEFAULT_FROM_EMAIL",
-    MAIL_USERNAME,
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
+RESEND_API_URL = os.getenv(
+    "RESEND_API_URL", "https://api.resend.com/emails"
 ).strip()
-
-MAIL_TIMEOUT = 10
-
-MAILERS = {
-    "default": {
-        "BACKEND": "django.core.mail.backends.smtp.EmailBackend",
-        "OPTIONS": {
-            "host": "smtp.gmail.com",
-            "port": 587,
-            "username": MAIL_USERNAME,
-            "password": MAIL_PASSWORD,
-            "use_tls": True,
-            "use_ssl": False,
-            "timeout": MAIL_TIMEOUT,
-        },
-    },
-}
+RESEND_TIMEOUT = int(os.getenv("RESEND_TIMEOUT", "15"))
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL", "onboarding@resend.dev"
+).strip()
 
 PUBLIC_API_BASE_URL = os.getenv(
     "PUBLIC_API_BASE_URL",
@@ -241,3 +229,7 @@ SPECTACULAR_SETTINGS = {
     "SERVE_INCLUDE_SCHEMA": False,
     "REDOC_DIST": "https://cdn.jsdelivr.net/npm/redoc@2.5.0",
 }
+
+
+# Maximum number of active tickets assigned to one agent.
+SUPPORT_AGENT_MAX_ACTIVE_TICKETS = 5

@@ -9,6 +9,7 @@ from apps.accounts.views import (
     EmailVerificationView,
     EligibleAccountTokenRefreshView,
     VerifiedEmailTokenObtainPairView,
+    EmployeeInvitationView, EmployeeInvitationAcceptView, AgentListView, AgentStatusView,
 )
 
 
@@ -16,6 +17,10 @@ app_name = "accounts"
 
 
 urlpatterns = [
+    path("employees/invitations/", EmployeeInvitationView.as_view(), name="employee-invitations"),
+    path("employees/invitations/accept/", EmployeeInvitationAcceptView.as_view(), name="accept-employee-invitation"),
+    path("employees/agents/", AgentListView.as_view(), name="agent-list"),
+    path("employees/agents/<uuid:user_id>/status/", AgentStatusView.as_view(), name="agent-status"),
     path(
         "register/",
         CustomerRegistrationView.as_view(),

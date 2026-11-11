@@ -1,0 +1,37 @@
+﻿# Environment variables and secrets
+.env
+.env.*
+!.env.example
+.knowledge_access_token
+
+# Python environments and caches
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*.pyd
+
+# Git and editor files
+.git/
+.vscode/
+.idea/
+
+# Local databases and generated data
+db.sqlite3
+db.sqlite3-journal
+media/
+
+# Archives and temporary files
+*.zip
+*.log
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Operating-system files
+Thumbs.db
+Desktop.ini
+
+# Database backups
+backups/
