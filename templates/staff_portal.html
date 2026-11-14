@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Staff portal</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17202a;font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}
+    header{background:#fff;border-bottom:1px solid #e2e7ec}.shell{width:min(100% - 40px,980px);margin:auto}
+    .top{min-height:68px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+    main{padding:54px 0}.eyebrow{color:#64717e;text-transform:uppercase;letter-spacing:.12em;font-size:.76rem;font-weight:700}
+    h1{font-size:2.1rem;line-height:1.2;margin:8px 0}.intro{color:#64717e;max-width:650px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:30px}
+    .card{background:#fff;border:1px solid #e2e7ec;border-radius:14px;padding:22px}
+    .card h2{font-size:1.15rem;margin:0 0 8px}.card p{color:#64717e;min-height:48px}
+    a{color:#245b91;font-weight:650;text-decoration:none}.card a{display:inline-block;margin-top:8px}
+    .logout{background:transparent;border:1px solid #cbd3dc;border-radius:8px;padding:9px 13px;font:inherit;cursor:pointer}
+    .logout-form{margin:0}.notice{color:#64717e;font-size:.9rem;margin-top:26px}
+    @media(max-width:520px){.top{align-items:flex-start;padding:16px 0}.top strong{max-width:60%}main{padding:36px 0}h1{font-size:1.7rem}}
+  </style>
+</head>
+<body>
+  <header>
+    <div class="shell top">
+      <strong>AI Customer Support · Staff Portal</strong>
+      <form class="logout-form" method="post" action="{% url 'staff-logout' %}">
+        {% csrf_token %}<button class="logout" type="submit">Sign out</button>
+      </form>
+    </div>
+  </header>
+  <main class="shell">
+    <div class="eyebrow">Internal resources</div>
+    <h1>Welcome to the staff portal</h1>
+    <p class="intro">Use the API documentation to inspect endpoints, understand request and response schemas, and interact with the backend using your authorized credentials.</p>
+    <section class="grid" aria-label="API documentation">
+      <article class="card">
+        <h2>Swagger UI</h2>
+        <p>Explore API operations and make interactive requests.</p>
+        <a href="{% url 'swagger-ui' %}">Open Swagger UI →</a>
+      </article>
+      <article class="card">
+        <h2>ReDoc</h2>
+        <p>Read the API reference in a structured documentation layout.</p>
+        <a href="{% url 'redoc' %}">Open ReDoc →</a>
+      </article>
+      <article class="card">
+        <h2>OpenAPI schema</h2>
+        <p>Access the machine-readable API specification.</p>
+        <a href="{% url 'schema' %}">View schema →</a>
+      </article>
+      {% if is_admin %}
+      <article class="card">
+        <h2>Administration</h2>
+        <p>Manage administrative records and platform configuration.</p>
+        <a href="{% url 'admin:index' %}">Open Django administration →</a>
+      </article>
+      {% endif %}
+    </section>
+    <p class="notice">Documentation access is limited to active agent and administrator accounts. Individual API operations retain their own authorization rules.</p>
+  </main>
+</body>
+</html>

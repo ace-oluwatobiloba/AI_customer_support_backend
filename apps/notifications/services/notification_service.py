@@ -65,13 +65,14 @@ def create_notification(
             provider=NotificationDelivery.Provider.RESEND,
             status=NotificationDelivery.Status.PENDING,
         )
-        transaction.on_commit(
-            lambda delivery_id=delivery.pk, html=html_message:
-                deliver_notification_email(
-                    delivery_id=delivery_id,
-                    html_message=html,
-                )
-        )
+        def enqueue_delivery(delivery_id=delivery.pk, html=html_message):
+            from apps.notifications.tasks import deliver_notification_email_task
+            try:
+                deliver_notification_email_task.delay(delivery_id=str(delivery_id), html_message=html)
+            except Exception:
+                logger.exception("Could not queue notification delivery %s.", delivery_id)
+
+        transaction.on_commit(enqueue_delivery)
 
     return notification
 

@@ -1,0 +1,146 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="Get help, find answers and contact our customer support team.">
+  <title>{{ organization_name }} | Customer Support</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #172338; --muted: #64748b; --navy: #101827;
+      --blue: #2864dc; --line: #e4eaf2; --surface: #f5f8fc;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); font-family: Inter, "Segoe UI", Arial, sans-serif; background: white; }
+    a { color: inherit; text-decoration: none; }
+    .shell { width: min(1120px, calc(100% - 40px)); margin: auto; }
+    .nav { height: 76px; display: flex; align-items: center; justify-content: space-between; gap: 20px; }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 750; letter-spacing: -.02em; }
+    .mark { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 12px; color: white; background: var(--blue); font-size: 19px; }
+    .navlinks { display: flex; gap: 26px; align-items: center; color: var(--muted); font-size: 14px; }
+    .navlinks a:hover, .footer a:hover { color: var(--blue); }
+    .hero { background: radial-gradient(ellipse at 75% 20%, #263f69 0, transparent 42%), linear-gradient(125deg, #101827, #182b48); color: white; }
+    .hero-inner { min-height: 430px; display: grid; grid-template-columns: 1.35fr .65fr; align-items: center; gap: 40px; padding-top: 55px; padding-bottom: 55px; }
+    .eyebrow { color: #a9c5ff; text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 750; }
+    h1 { font-size: clamp(38px, 5.2vw, 58px); line-height: 1.08; letter-spacing: -.045em; margin: 18px 0; max-width: 650px; }
+    .hero p { color: #d0d9e8; font-size: 17px; line-height: 1.75; max-width: 590px; margin: 0 0 28px; }
+    .button { display: inline-flex; align-items: center; justify-content: center; padding: 14px 21px; border-radius: 9px; background: var(--blue); color: white; font-weight: 700; box-shadow: 0 8px 22px #071b3a55; }
+    .button:hover { background: #1e52bd; transform: translateY(-1px); }
+    .hero-aside { border: 1px solid #ffffff28; background: #ffffff0d; border-radius: 18px; padding: 26px; backdrop-filter: blur(8px); }
+    .hero-aside .bubble { width: 52px; height: 52px; display: grid; place-items: center; border-radius: 16px; background: #ffffff18; font-size: 25px; margin-bottom: 18px; }
+    .hero-aside h2 { margin: 0 0 9px; font-size: 19px; }
+    .hero-aside p { font-size: 14px; margin: 0; }
+    .section { padding: 76px 0; }
+    .section-head { text-align: center; max-width: 650px; margin: 0 auto 36px; }
+    .section-head h2 { font-size: 30px; letter-spacing: -.03em; margin: 0 0 10px; }
+    .section-head p { color: var(--muted); line-height: 1.7; margin: 0; }
+    .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    .card { border: 1px solid var(--line); border-radius: 14px; padding: 25px; background: white; min-height: 190px; }
+    .card-icon { width: 43px; height: 43px; display: grid; place-items: center; border-radius: 12px; background: #edf3ff; color: var(--blue); font-size: 20px; margin-bottom: 17px; }
+    .card h3 { margin: 0 0 9px; font-size: 17px; }
+    .card p { margin: 0; color: var(--muted); line-height: 1.65; font-size: 14px; }
+    .card a { display: inline-block; margin-top: 15px; color: var(--blue); font-weight: 700; font-size: 13px; }
+    .contact { background: var(--surface); padding: 36px; border-radius: 16px; display: flex; align-items: center; justify-content: space-between; gap: 24px; }
+    .contact h2 { margin: 0 0 8px; font-size: 22px; }
+    .contact p { margin: 0; color: var(--muted); line-height: 1.6; }
+    .contact-details { display: flex; flex-direction: column; gap: 8px; color: var(--muted); font-size: 14px; }
+    .footer { border-top: 1px solid var(--line); padding: 25px 0; color: var(--muted); font-size: 13px; }
+    .footer-inner { display: flex; justify-content: space-between; gap: 20px; flex-wrap: wrap; }
+    @media (max-width: 760px) {
+      .hero-inner { grid-template-columns: 1fr; gap: 28px; }
+      .hero-aside { max-width: 480px; }
+      .cards { grid-template-columns: 1fr; }
+      .contact { align-items: flex-start; flex-direction: column; padding: 26px; }
+      .navlinks { gap: 14px; }
+    }
+    @media (max-width: 480px) {
+      .shell { width: min(100% - 28px, 1120px); }
+      .nav { height: 66px; }
+      .navlinks a:not(:last-child) { display: none; }
+      .section { padding: 55px 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="shell nav">
+    <a class="brand" href="/" aria-label="{{ organization_name }} home">
+      <span class="mark" aria-hidden="true">S</span>
+      <span>{{ organization_name }}</span>
+    </a>
+    <nav class="navlinks" aria-label="Main navigation">
+      <a href="#support-options">Support options</a>
+      <a href="#contact">Contact</a>
+      <a href="/chat/">Customer chat</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="shell hero-inner">
+        <div>
+          <div class="eyebrow">Customer care</div>
+          <h1>How can we help you today?</h1>
+          <p>{{ organization_tagline }} Find answers, get assistance and connect with our customer support team.</p>
+          <a class="button" href="/chat/">Chat Customer Support <span aria-hidden="true">&nbsp;→</span></a>
+        </div>
+        <aside class="hero-aside">
+          <div class="bubble" aria-hidden="true">✦</div>
+          <h2>Support that starts with listening</h2>
+          <p>Start a conversation with our support assistant. If your issue needs personal attention, your conversation can be escalated to a human support agent.</p>
+        </aside>
+      </div>
+    </section>
+
+    <section class="section shell" id="support-options">
+      <div class="section-head">
+        <h2>What would you like to do?</h2>
+        <p>Choose the support option that best matches what you need. You can start with a conversation and request further assistance when necessary.</p>
+      </div>
+      <div class="cards">
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">☏</div>
+          <h3>Chat with customer support</h3>
+          <p>Ask a question and receive assistance from our AI support assistant.</p>
+          <a href="/chat/">Start a conversation →</a>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">▤</div>
+          <h3>Submit a support request</h3>
+          <p>Describe your issue in the chat. If it requires further attention, request escalation to our support team.</p>
+          <a href="/chat/">Get assistance →</a>
+        </article>
+        <article class="card">
+          <div class="card-icon" aria-hidden="true">◎</div>
+          <h3>Follow up on an issue</h3>
+          <p>Sign in to continue an existing support conversation or discuss an unresolved issue.</p>
+          <a href="/chat/">Continue to support →</a>
+        </article>
+      </div>
+    </section>
+
+    <section class="shell" id="contact" style="padding-bottom:72px">
+      <div class="contact">
+        <div>
+          <h2>Still need help?</h2>
+          <p>Contact our team or start a support conversation online.</p>
+        </div>
+        <div class="contact-details">
+          {% if support_email %}<a href="mailto:{{ support_email }}">{{ support_email }}</a>{% endif %}
+          {% if support_phone %}<a href="tel:{{ support_phone }}">{{ support_phone }}</a>{% endif %}
+          <a class="button" href="/chat/">Chat with support</a>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="shell footer-inner">
+      <span>© {% now "Y" %} {{ organization_name }}. All rights reserved.</span>
+      <span>Customer Support Portal</span>
+    </div>
+  </footer>
+</body>
+</html>

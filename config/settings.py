@@ -82,7 +82,7 @@ ROOT_URLCONF = 'config.urls'
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [],
+        'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
             'context_processors': [
@@ -178,6 +178,16 @@ PUBLIC_API_BASE_URL = os.getenv(
     "http://127.0.0.1:8000",
 ).rstrip("/")
 
+# Public customer portal branding. These values are presentation settings,
+# not credentials; override them through the deployment environment.
+ORGANIZATION_NAME = os.getenv("ORGANIZATION_NAME", "Customer Support")
+ORGANIZATION_TAGLINE = os.getenv(
+    "ORGANIZATION_TAGLINE",
+    "Helpful answers. Human support. A better experience.",
+)
+ORGANIZATION_SUPPORT_EMAIL = os.getenv("ORGANIZATION_SUPPORT_EMAIL", "")
+ORGANIZATION_SUPPORT_PHONE = os.getenv("ORGANIZATION_SUPPORT_PHONE", "")
+
 AUTH_USER_MODEL = "accounts.User"
 
 # Store uploaded files in the project's local media directory.
@@ -233,3 +243,24 @@ SPECTACULAR_SETTINGS = {
 
 # Maximum number of active tickets assigned to one agent.
 SUPPORT_AGENT_MAX_ACTIVE_TICKETS = 5
+
+
+# ============================================================
+# CELERY — Background task processing
+# ============================================================
+CELERY_BROKER_URL = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0").strip()
+CELERY_RESULT_BACKEND = os.getenv("CELERY_RESULT_BACKEND", CELERY_BROKER_URL).strip()
+CELERY_ACCEPT_CONTENT = ["json"]
+CELERY_TASK_SERIALIZER = "json"
+CELERY_RESULT_SERIALIZER = "json"
+CELERY_TIMEZONE = TIME_ZONE
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_ACKS_LATE = True
+CELERY_WORKER_PREFETCH_MULTIPLIER = 1
+CELERY_TASK_IGNORE_RESULT = True
+CELERY_BEAT_SCHEDULE = {
+    "expire-employee-invitations-every-15-minutes": {
+        "task": "accounts.expire_employee_invitations",
+        "schedule": 900.0,
+    },
+}

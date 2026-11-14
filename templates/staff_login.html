@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Staff sign in</title>
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#f4f6f8;color:#17202a;font:16px/1.5 system-ui,-apple-system,Segoe UI,sans-serif;min-height:100vh;display:grid;place-items:center;padding:24px}
+    .panel{width:min(100%,440px);background:#fff;border:1px solid #e2e7ec;border-radius:16px;padding:32px;box-shadow:0 12px 36px #17202a12}
+    h1{margin:0 0 8px;font-size:1.65rem}.muted{color:#64717e;margin:0 0 24px}
+    label{display:block;font-weight:600;margin:16px 0 6px}input{width:100%;padding:12px;border:1px solid #cbd3dc;border-radius:8px;font:inherit}
+    button{width:100%;margin-top:22px;padding:12px;border:0;border-radius:8px;background:#17202a;color:white;font:inherit;font-weight:650;cursor:pointer}
+    .errorlist,.error{color:#a52828}.back{display:inline-block;margin-top:18px;color:#425466}
+    ul.errorlist{padding-left:20px}
+  </style>
+</head>
+<body>
+  <main class="panel">
+    <h1>Staff sign in</h1>
+    <p class="muted">Sign in with your staff account to access API documentation and staff resources.</p>
+    {% if form.non_field_errors %}<div class="error">{{ form.non_field_errors }}</div>{% endif %}
+    <form method="post">
+      {% csrf_token %}
+      <label for="{{ form.username.id_for_label }}">Email address</label>
+      {{ form.username }}
+      {% if form.username.errors %}<div class="error">{{ form.username.errors }}</div>{% endif %}
+      <label for="{{ form.password.id_for_label }}">Password</label>
+      {{ form.password }}
+      {% if form.password.errors %}<div class="error">{{ form.password.errors }}</div>{% endif %}
+      <button type="submit">Sign in</button>
+    </form>
+    <a class="back" href="/">← Return to customer homepage</a>
+  </main>
+</body>
+</html>

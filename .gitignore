@@ -42,3 +42,29 @@ db.sqlite3-journal
 
 # Database backups
 backups/
+
+# Additional Python tooling
+.mypy_cache/
+.ruff_cache/
+.tox/
+.nox/
+
+# Build and distribution artifacts
+build/
+dist/
+*.egg-info/
+
+# Coverage and test artifacts
+.coverage.*
+.pytest_cache/
+
+# Local database and backup files
+*.sqlite3
+*.dump
+*.sql
+*.bak
+
+# Runtime and temporary files
+*.pid
+*.sock
+*.tmp

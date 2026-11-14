@@ -10,6 +10,7 @@ The views handle HTTP concerns:
 File storage and database operations remain in upload_service.py.
 """
 
+from django.db import transaction
 from django.shortcuts import get_object_or_404
 
 from rest_framework import status
@@ -25,11 +26,20 @@ from apps.knowledge.serial.serializers import (
     KnowledgeDocumentUploadSerializer,
     KnowledgeDocumentVersionUploadSerializer,
 )
+from apps.knowledge.tasks import ingest_document_version
 from apps.knowledge.services.upload_service import (
     DocumentUploadError,
     create_knowledge_document,
     create_knowledge_document_version,
 )
+
+
+def _queue_document_ingestion(version_id):
+    try:
+        ingest_document_version.delay(str(version_id))
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Could not queue ingestion for version %s.", version_id)
 
 
 class KnowledgeDocumentUploadView(APIView):
@@ -89,6 +99,8 @@ class KnowledgeDocumentUploadView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        transaction.on_commit(lambda version_id=version.pk: _queue_document_ingestion(version_id))
 
         # Return the public metadata, not the internal storage key.
         return Response(
@@ -195,6 +207,8 @@ class KnowledgeDocumentVersionUploadView(APIView):
                 },
                 status=status.HTTP_400_BAD_REQUEST,
             )
+
+        transaction.on_commit(lambda version_id=version.pk: _queue_document_ingestion(version_id))
 
         return Response(
             {

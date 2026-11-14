@@ -5,7 +5,6 @@ from django.db import transaction
 from apps.conversations.models import Conversation
 from apps.support.models import Ticket, TicketEscalation
 from apps.support.services import (
-    auto_assign_ticket,
     create_customer_ticket,
     escalate_ticket,
 )
@@ -74,9 +73,16 @@ def escalate_conversation(*, conversation_id, customer, reason):
     conversation.status = Conversation.Status.ESCALATED
     conversation.save(update_fields=["ticket", "status", "updated_at"])
 
-    # Preserve any existing assignment; otherwise assign to the least-loaded
-    # eligible agent. If no agent has capacity, the ticket remains available
-    # for an administrator to assign manually.
-    auto_assign_ticket(ticket_id=ticket.id)
+    # Queue assignment after the escalation transaction commits.
+    def enqueue_assignment(ticket_id=ticket.id):
+        from apps.support.tasks import retry_auto_assign_ticket
+        try:
+            retry_auto_assign_ticket.delay(str(ticket_id))
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception(
+                "Could not queue automated assignment for ticket %s.", ticket_id
+            )
 
+    transaction.on_commit(enqueue_assignment)
     return ticket

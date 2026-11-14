@@ -1,4 +1,4 @@
-﻿services:
+services:
   db:
     image: docker.io/pgvector/pgvector:0.8.6-pg18-trixie
     container_name: ai-customer-support-db
@@ -17,6 +17,52 @@
       timeout: 5s
       retries: 5
       start_period: 15s
-
+  redis:
+    image: docker.io/library/redis:7-alpine
+    container_name: ai-customer-support-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+  web:
+    build: {context: ., dockerfile: Containerfile}
+    container_name: ai-customer-support-web
+    restart: unless-stopped
+    env_file: [.env]
+    environment: {DB_HOST: db, DB_PORT: "5432", REDIS_URL: redis://redis:6379/0}
+    ports: ["127.0.0.1:8000:8000"]
+    volumes: [media_data:/app/media, static_data:/app/staticfiles]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  celery-worker:
+    build: {context: ., dockerfile: Containerfile}
+    container_name: ai-customer-support-worker
+    restart: unless-stopped
+    command: ["celery", "-A", "config", "worker", "--loglevel=INFO"]
+    env_file: [.env]
+    environment: {DB_HOST: db, DB_PORT: "5432", REDIS_URL: redis://redis:6379/0}
+    volumes: [media_data:/app/media]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+  celery-beat:
+    build: {context: ., dockerfile: Containerfile}
+    container_name: ai-customer-support-beat
+    restart: unless-stopped
+    command: ["celery", "-A", "config", "beat", "--loglevel=INFO"]
+    env_file: [.env]
+    environment: {DB_HOST: db, DB_PORT: "5432", REDIS_URL: redis://redis:6379/0}
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
 volumes:
   postgres_data:
+  redis_data:
+  media_data:
+  static_data:
