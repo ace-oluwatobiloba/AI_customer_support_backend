@@ -37,7 +37,7 @@ if not SECRET_KEY:
     )
 
 # Read deployment settings from environment variables.
-DEBUG = os.getenv("DJANGO_DEBUG", "True").strip().lower() == "true"
+DEBUG = os.getenv("DJANGO_DEBUG", "False").strip().lower() == "true"
 
 ALLOWED_HOSTS = [
     host.strip()
@@ -55,6 +55,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 
+     # External storage integration
+    'storages',
+
     # Django REST Framework provides the foundation for our REST APIs.
     'rest_framework',
     'drf_spectacular',
@@ -69,6 +72,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -196,15 +200,130 @@ MEDIA_ROOT = BASE_DIR / "media"
 # Define the URL prefix for serving media during development.
 MEDIA_URL = "/media/"
 
-# Use Django's storage framework so the backend can be changed later.
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
-    },
-}
+
+# ============================================================
+# FILE STORAGE — LOCAL DEVELOPMENT / AMAZON S3 / BACKBLAZE B2
+# ============================================================
+
+# Backblaze B2 exposes an S3-compatible API. django-storages therefore
+# uses its S3 backend with B2's endpoint and application-key credentials.
+USE_B2_STORAGE = (
+    os.getenv("USE_B2_STORAGE", "false").strip().lower() == "true"
+)
+
+# Retain the legacy AWS S3 option for backward compatibility during rollout.
+USE_S3_STORAGE = (
+    os.getenv("USE_S3_STORAGE", "false").strip().lower() == "true"
+)
+
+if USE_B2_STORAGE and USE_S3_STORAGE:
+    raise RuntimeError(
+        "Enable only one remote storage provider: set USE_B2_STORAGE=true "
+        "or USE_S3_STORAGE=true, not both."
+    )
+
+if USE_B2_STORAGE:
+    B2_BUCKET_NAME = os.getenv("B2_BUCKET_NAME", "").strip()
+    B2_ENDPOINT_URL = os.getenv("B2_ENDPOINT_URL", "").strip().rstrip("/")
+    B2_REGION = os.getenv("B2_REGION", "").strip()
+    B2_KEY_ID = os.getenv("B2_KEY_ID", "").strip()
+    B2_APPLICATION_KEY = os.getenv("B2_APPLICATION_KEY", "").strip()
+
+    missing_b2_settings = [
+        name
+        for name, value in {
+            "B2_BUCKET_NAME": B2_BUCKET_NAME,
+            "B2_ENDPOINT_URL": B2_ENDPOINT_URL,
+            "B2_REGION": B2_REGION,
+            "B2_KEY_ID": B2_KEY_ID,
+            "B2_APPLICATION_KEY": B2_APPLICATION_KEY,
+        }.items()
+        if not value
+    ]
+
+    if missing_b2_settings:
+        raise RuntimeError(
+            "Backblaze B2 storage is enabled, but these settings are missing: "
+            + ", ".join(missing_b2_settings)
+        )
+
+    if not B2_ENDPOINT_URL.startswith("https://"):
+        raise RuntimeError("B2_ENDPOINT_URL must use HTTPS.")
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": B2_BUCKET_NAME,
+                "endpoint_url": B2_ENDPOINT_URL,
+                "region_name": B2_REGION,
+                "access_key": B2_KEY_ID,
+                "secret_key": B2_APPLICATION_KEY,
+                "signature_version": "s3v4",
+                "addressing_style": "path",
+                "default_acl": None,
+                "querystring_auth": True,
+                "file_overwrite": False,
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+
+elif USE_S3_STORAGE:
+    # Existing AWS S3 configuration remains available as a rollback path.
+    AWS_STORAGE_BUCKET_NAME = os.getenv(
+        "AWS_STORAGE_BUCKET_NAME", ""
+    ).strip()
+    AWS_S3_REGION_NAME = os.getenv(
+        "AWS_S3_REGION_NAME", ""
+    ).strip()
+
+    missing_s3_settings = [
+        name
+        for name, value in {
+            "AWS_STORAGE_BUCKET_NAME": AWS_STORAGE_BUCKET_NAME,
+            "AWS_S3_REGION_NAME": AWS_S3_REGION_NAME,
+        }.items()
+        if not value
+    ]
+
+    if missing_s3_settings:
+        raise RuntimeError(
+            "Missing required AWS S3 configuration: "
+            + ", ".join(missing_s3_settings)
+        )
+
+    STORAGES = {
+        "default": {
+            "BACKEND": "storages.backends.s3.S3Storage",
+            "OPTIONS": {
+                "bucket_name": AWS_STORAGE_BUCKET_NAME,
+                "region_name": AWS_S3_REGION_NAME,
+                "default_acl": None,
+                "querystring_auth": True,
+                "file_overwrite": False,
+                "signature_version": os.getenv(
+                    "AWS_S3_SIGNATURE_VERSION", "s3v4"
+                ),
+            },
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+
+else:
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
+
 
 # Default API security and documentation configuration.
 REST_FRAMEWORK = {
@@ -263,4 +382,8 @@ CELERY_BEAT_SCHEDULE = {
         "task": "accounts.expire_employee_invitations",
         "schedule": 900.0,
     },
+}
+# WhiteNoise serves collected Django static assets; preserve the default B2 media backend.
+STORAGES["staticfiles"] = {
+    "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
 }

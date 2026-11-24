@@ -1,42 +1,51 @@
-﻿import getpass
+import getpass
 from pathlib import Path
 
 import requests
 
-base_url = "http://127.0.0.1:8000"
 
-email = input("Administrator email: ").strip()
-password = getpass.getpass("Administrator password: ")
+BASE_URL = "http://127.0.0.1:8000"
+PROJECT_ROOT = Path(__file__).resolve().parent
+TOKEN_DIR = PROJECT_ROOT / ".secrets"
+TOKEN_PATH = TOKEN_DIR / "knowledge_access_token"
 
-try:
-    response = requests.post(
-        f"{base_url}/api/v1/auth/token/",
-        json={
-            "email": email,
-            "password": password,
-        },
-        timeout=30,
-    )
-except requests.RequestException as exc:
-    raise SystemExit(f"Could not contact Django: {exc}")
 
-print("HTTP status:", response.status_code)
+def main():
+    email = input("Administrator email: ").strip()
+    password = getpass.getpass("Administrator password: ")
 
-if response.status_code != 200:
-    print("Response:", response.text)
-    raise SystemExit("JWT authentication failed.")
+    try:
+        response = requests.post(
+            f"{BASE_URL}/api/v1/auth/token/",
+            json={
+                "email": email,
+                "password": password,
+            },
+            timeout=30,
+        )
+    except requests.RequestException as exc:
+        raise SystemExit(f"Could not contact Django: {exc}")
 
-payload = response.json()
-access_token = payload.get("access")
+    print("HTTP status:", response.status_code)
 
-if not access_token:
-    print("Response keys:", list(payload.keys()))
-    raise SystemExit("No access token was returned.")
+    if response.status_code != 200:
+        print("Response:", response.text)
+        raise SystemExit("JWT authentication failed.")
 
-Path(".knowledge_access_token").write_text(
-    access_token,
-    encoding="utf-8",
-)
+    payload = response.json()
+    access_token = payload.get("access")
 
-print("Access token saved successfully.")
-print("Token value intentionally not displayed.")
+    if not access_token:
+        print("Response keys:", list(payload.keys()))
+        raise SystemExit("No access token was returned.")
+
+    TOKEN_DIR.mkdir(parents=True, exist_ok=True)
+    TOKEN_PATH.write_text(access_token, encoding="utf-8")
+
+    print("Access token saved successfully.")
+    print("Token value intentionally not displayed.")
+    print("Token location:", TOKEN_PATH)
+
+
+if __name__ == "__main__":
+    main()

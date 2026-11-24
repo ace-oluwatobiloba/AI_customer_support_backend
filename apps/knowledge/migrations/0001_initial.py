@@ -20,7 +20,7 @@ class Migration(migrations.Migration):
     operations = [
         # Enable the pgvector before cresting the DocumentChunk vector field.
         VectorExtension(),
-        
+
         migrations.CreateModel(
             name='KnowledgeDocument',
             fields=[

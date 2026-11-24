@@ -1,10 +1,12 @@
-﻿from pathlib import Path
+from pathlib import Path
 
 import requests
 
+
 BASE_URL = "http://127.0.0.1:8000"
-TOKEN_PATH = Path(".knowledge_access_token")
-DOCUMENT_PATH = Path("test_support_policy.txt")
+PROJECT_ROOT = Path(__file__).resolve().parent
+TOKEN_PATH = PROJECT_ROOT / ".secrets" / "knowledge_access_token"
+DOCUMENT_PATH = PROJECT_ROOT / "test_support_policy.txt"
 
 
 def main():
@@ -15,7 +17,7 @@ def main():
 
     if not DOCUMENT_PATH.is_file():
         raise SystemExit(
-            f"Knowledge document not found: {DOCUMENT_PATH.resolve()}"
+            f"Knowledge document not found: {DOCUMENT_PATH}"
         )
 
     token = TOKEN_PATH.read_text(encoding="utf-8").strip()

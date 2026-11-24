@@ -46,6 +46,7 @@ def extract_text(file_source, filename: str | None = None) -> str:
 
         try:
             # Read the file through the storage-provided file object.
+            file_source.seek(0)
             file_content = file_source.read()
         except Exception as exc:
             raise DocumentExtractionError(

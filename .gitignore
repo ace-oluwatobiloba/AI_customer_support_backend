@@ -1,7 +1,10 @@
-﻿# Environment variables and secrets
+# Environment variables and secrets
 .env
 .env.*
 !.env.example
+
+# Local access tokens and secret material
+.secrets/
 .knowledge_access_token
 
 # Python environments
@@ -29,16 +32,20 @@ Thumbs.db
 
 # Test and coverage output
 .coverage
+.coverage.*
 htmlcov/
 .pytest_cache/
 
 # Local databases
 db.sqlite3
 db.sqlite3-journal
+*.sqlite3
 
 # Archives and temporary backup files
 *.zip
 *.bak
+*.dump
+*.sql
 
 # Database backups
 backups/
@@ -53,16 +60,6 @@ backups/
 build/
 dist/
 *.egg-info/
-
-# Coverage and test artifacts
-.coverage.*
-.pytest_cache/
-
-# Local database and backup files
-*.sqlite3
-*.dump
-*.sql
-*.bak
 
 # Runtime and temporary files
 *.pid
