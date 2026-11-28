@@ -33,6 +33,8 @@ class CustomerRegistrationAPITests(APITestCase):
     def setUp(self):
         self.url = reverse("accounts:register")
         self.valid_payload = {
+            "first_name": "New",
+            "last_name": "Customer",
             "email": "new.customer@example.com",
             "password": "A-Strong-Unique-Test-Password-482!",
             "password_confirm": "A-Strong-Unique-Test-Password-482!",
@@ -52,6 +54,8 @@ class CustomerRegistrationAPITests(APITestCase):
         self.assertEqual(user.status, User.Status.ACTIVE)
         self.assertFalse(user.email_verified)
         self.assertTrue(user.check_password(self.valid_payload["password"]))
+        self.assertEqual(user.customer_profile.first_name, "New")
+        self.assertEqual(user.customer_profile.last_name, "Customer")
         mock_send_email.assert_called_once_with(user)
 
     @patch("apps.accounts.services.registration.send_verification_email")

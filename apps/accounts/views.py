@@ -5,6 +5,7 @@ HTTP API views for registration, email verification, and JWT authentication.
 from rest_framework import status
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from django.http import HttpResponse
 from rest_framework.views import APIView
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 
@@ -65,6 +66,8 @@ class CustomerRegistrationView(APIView):
             user = register_customer(
                 email=serializer.validated_data["email"],
                 password=serializer.validated_data["password"],
+                first_name=serializer.validated_data["first_name"],
+                last_name=serializer.validated_data["last_name"],
             )
         except RegistrationError:
             return Response(
@@ -114,6 +117,29 @@ class EmailVerificationView(APIView):
         },
         tags=["Authentication"],
     )
+
+    def get(self, request):
+        """Verify an emailed token through a browser link."""
+        token = request.query_params.get("token", "")
+        if not token:
+            return HttpResponse(
+                "<h1>Verification link is incomplete</h1><p>Request a new verification email or contact support.</p>",
+                status=400,
+                content_type="text/html; charset=utf-8",
+            )
+        try:
+            user = verify_email_token(token)
+        except EmailVerificationError as exc:
+            return HttpResponse(
+                f"<h1>Email verification unsuccessful</h1><p>{exc}</p>",
+                status=400,
+                content_type="text/html; charset=utf-8",
+            )
+        return HttpResponse(
+            "<h1>Email verified</h1><p>Your email address is now verified. You can return to the <a href='/chat/'>customer support sign-in page</a>.</p>",
+            status=200,
+            content_type="text/html; charset=utf-8",
+        )
 
     def post(self, request):
         serializer = EmailVerificationSerializer(

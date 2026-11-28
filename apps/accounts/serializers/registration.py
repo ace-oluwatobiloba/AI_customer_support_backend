@@ -10,6 +10,8 @@ from apps.accounts.models import User
 
 
 class CustomerRegistrationSerializer(serializers.Serializer):
+    first_name = serializers.CharField(max_length=100, trim_whitespace=True)
+    last_name = serializers.CharField(max_length=100, trim_whitespace=True)
     email = serializers.EmailField()
     password = serializers.CharField(
         write_only=True,

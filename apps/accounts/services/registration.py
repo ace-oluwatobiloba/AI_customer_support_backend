@@ -4,7 +4,7 @@ Account-registration service.
 
 from django.db import transaction
 
-from apps.accounts.models import User
+from apps.accounts.models import CustomerProfile, User
 from apps.accounts.services.email_verification import (
     EmailVerificationError,
     send_verification_email,
@@ -16,7 +16,7 @@ class RegistrationError(Exception):
 
 
 @transaction.atomic
-def register_customer(email, password):
+def register_customer(email, password, first_name, last_name):
     """
     Create an unverified customer account and send verification email.
 
@@ -36,6 +36,12 @@ def register_customer(email, password):
         status=User.Status.ACTIVE,
         email_verified=False,
         email_verified_at=None,
+    )
+
+    CustomerProfile.objects.create(
+        user=user,
+        first_name=first_name.strip(),
+        last_name=last_name.strip(),
     )
 
     try:

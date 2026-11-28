@@ -66,13 +66,15 @@ def send_verification_email(user):
 
     token = generate_verification_token(user)
     verification_path = reverse("accounts:verify-email")
-    endpoint = f"{settings.PUBLIC_API_BASE_URL.rstrip('/')}{verification_path}"
+    endpoint = (
+        f"{settings.PUBLIC_API_BASE_URL.rstrip('/')}{verification_path}"
+        f"?token={token}"
+    )
     subject = "Verify your email address"
     message = (
         f"Hello,\n\nAn account was created using {user.email}.\n\n"
-        f"Submit a POST request to {endpoint} with this JSON body:\n"
-        f'{{"token": "{token}"}}\n\n'
-        "This verification token expires in 24 hours.\n\n"
+        f"Verify your email address by opening this link:\n{endpoint}\n\n"
+        "This verification link expires in 24 hours.\n\n"
         "If you did not request this account, you can ignore this email."
     )
     try:

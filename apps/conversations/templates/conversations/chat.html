@@ -90,7 +90,13 @@
             margin: 18px 0;
         }
 
-        #login-button { width: 100%; }
+        #login-button, #register-button { width: 100%; }
+        #show-register, #show-login {
+            padding: 0;
+            background: transparent;
+            color: var(--accent);
+            font-weight: 650;
+        }
 
         /* Chat application */
 
@@ -336,6 +342,37 @@
             <button id="login-button" type="submit">Sign in</button>
             <p id="login-notice" class="notice" role="alert"></p>
         </form>
+
+        <p class="muted" style="text-align:center">
+            New here? <button id="show-register" type="button">Create a customer account</button>
+        </p>
+
+        <form id="register-form" class="hidden">
+            <h2>Create your customer account</h2>
+            <div class="form-field">
+                <label for="register-first-name">First name</label>
+                <input id="register-first-name" name="first_name" autocomplete="given-name" required maxlength="100">
+            </div>
+            <div class="form-field">
+                <label for="register-last-name">Last name</label>
+                <input id="register-last-name" name="last_name" autocomplete="family-name" required maxlength="100">
+            </div>
+            <div class="form-field">
+                <label for="register-email">Email address</label>
+                <input id="register-email" name="email" type="email" autocomplete="email" required>
+            </div>
+            <div class="form-field">
+                <label for="register-password">Password</label>
+                <input id="register-password" name="password" type="password" autocomplete="new-password" required>
+            </div>
+            <div class="form-field">
+                <label for="register-password-confirm">Confirm password</label>
+                <input id="register-password-confirm" name="password_confirm" type="password" autocomplete="new-password" required>
+            </div>
+            <button id="register-button" type="submit">Create account</button>
+            <p id="register-notice" class="notice" role="alert"></p>
+            <p class="muted">Already registered? <button id="show-login" type="button">Sign in</button></p>
+        </form>
     </section>
 
     <div id="chat-app" class="hidden">
@@ -406,6 +443,9 @@
             const loginForm = $("login-form");
             const loginButton = $("login-button");
             const loginNotice = $("login-notice");
+            const registerForm = $("register-form");
+            const registerButton = $("register-button");
+            const registerNotice = $("register-notice");
             const sidebarNotice = $("sidebar-notice");
             const chatNotice = $("chat-notice");
             const conversationList = $("conversation-list");
@@ -668,6 +708,60 @@
                     showNotice(sidebarNotice, error.message);
                 }
             }
+
+            $("show-register").addEventListener("click", () => {
+                loginForm.classList.add("hidden");
+                $("show-register").classList.add("hidden");
+                registerForm.classList.remove("hidden");
+                showNotice(loginNotice);
+            });
+
+            $("show-login").addEventListener("click", () => {
+                registerForm.classList.add("hidden");
+                loginForm.classList.remove("hidden");
+                $("show-register").classList.remove("hidden");
+                showNotice(registerNotice);
+            });
+
+            registerForm.addEventListener("submit", async (event) => {
+                event.preventDefault();
+                showNotice(registerNotice);
+                registerButton.disabled = true;
+                registerButton.textContent = "Creating account...";
+                try {
+                    const response = await fetch("/api/v1/auth/register/", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "Accept": "application/json"
+                        },
+                        body: JSON.stringify({
+                            first_name: $("register-first-name").value.trim(),
+                            last_name: $("register-last-name").value.trim(),
+                            email: $("register-email").value.trim(),
+                            password: $("register-password").value,
+                            password_confirm: $("register-password-confirm").value
+                        })
+                    });
+                    const data = await response.json();
+                    if (!response.ok) {
+                        throw new Error(
+                            data.detail || JSON.stringify(data) ||
+                            "Registration could not be completed."
+                        );
+                    }
+                    registerForm.reset();
+                    showNotice(
+                        registerNotice,
+                        data.message || "Account created. Check your email for the verification link."
+                    );
+                } catch (error) {
+                    showNotice(registerNotice, error.message);
+                } finally {
+                    registerButton.disabled = false;
+                    registerButton.textContent = "Create account";
+                }
+            });
 
             loginForm.addEventListener("submit", async (event) => {
                 event.preventDefault();
